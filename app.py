@@ -15,6 +15,31 @@ from lxml import etree
 
 from app_roles import ROLE_NAMES
 
+# Exposes AT-SPI as a webdriver. This is written in python because C sucks and pyatspi is a first class binding so
+# we lose nothing but gain the reduced sucking of python.
+
+# https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#WebElement_JSON_Object.md
+# https://www.w3.org/TR/webdriver
+# https://github.com/microsoft/WinAppDriver/blob/master/Docs/SupportedAPIs.md
+# https://www.freedesktop.org/wiki/Accessibility/PyAtSpi2Example/
+
+# Using flask because I know nothing about writing REST in python and it seemed the most straight-forward framework.
+sys.stdout = sys.stderr
+app = Flask(__name__)
+sessions = {} # global dict of open sessions
+
+
+@app.route('/status', methods=['GET'])
+def status():
+  body = {
+    'value': {
+      'ready': 'true',
+      'message': 'There is only one state. Hooray!'
+    }
+  }
+  return json.dumps(body), 200, {'content-type': 'application/json'}
+
+
 def _createNode(doc, accessible, parentElement):
   # role = accessible.getRole()
   # name = ROLE_NAMES[role]
@@ -72,17 +97,6 @@ def _createNode2(accessible, parentElement):
     return e
 
 
-
-# Exposes AT-SPI as a webdriver. This is written in python because C sucks and pyatspi is a first class binding so
-# we lose nothing but gain the reduced sucking of python.
-
-# https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#WebElement_JSON_Object.md
-# https://www.w3.org/TR/webdriver1/#dfn-delete-session
-# https://github.com/microsoft/WinAppDriver/blob/master/Docs/SupportedAPIs.md
-
-# Using flask because I know nothing about writing REST in python and it seemed the most straight-forward framework.
-app = Flask(__name__)
-sessions = {} # global dict of open sessions
 
 @app.route('/')
 def index():
@@ -268,17 +282,6 @@ def session_element_text(session_id, element_id):
   print(element.name)
   print(element.description)
   return json.dumps({'value':element.name})
-
-@app.route('/status', methods=['GET'])
-def status():
-  body = {
-    'value': {
-      'ready': 'true',
-      'message': 'There is only one state. Hooray!'
-    }
-  }
-
-  return json.dumps(body), 200, {'content-type': 'application/json'}
 
 @app.route('/session/<session_id>/element/<element_id>/attribute/<name>', methods=['GET'])
 def session_element_attribute(session_id, element_id, name):
