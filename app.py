@@ -188,7 +188,9 @@ def locator(session, strategy, selector, start):
   else:
     # TODO can I switch this in python +++ raise on unmapped strategy
     pred = None
-    if strategy == 'accessibility id': # pyatspi strings "[ roleName | name ]"
+    if strategy == 'accessibility id':
+      pass # FIXME not implemented! https://codereview.qt-project.org/c/qt/qtbase/+/425946
+    elif strategy == 'class name': # pyatspi strings "[ roleName | name ]"
       pred = lambda x: str(x) == selector and x.getState().contains(pyatspi.STATE_VISIBLE)
     elif strategy == 'name':
       pred = lambda x: x.name == selector and x.getState().contains(pyatspi.STATE_VISIBLE)
