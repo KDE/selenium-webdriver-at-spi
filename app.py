@@ -147,7 +147,7 @@ def session():
     print(request)
     sessions[session.id] = session
     print(sessions)
-    return json.dumps({'value': {'sessionId': session.id, 'capabilities': {}}}), 200, {'content-type': 'application/json'}
+    return json.dumps({'value': {'sessionId': session.id, 'capabilities': {"app": session.browsing_context.name}}}), 200, {'content-type': 'application/json'}
   elif request.method == 'GET':
     # TODO impl
     print(request)
