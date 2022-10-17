@@ -201,9 +201,7 @@ def locator(session, strategy, selector, start):
     if not result:
       return json.dumps({'value':{'error': 'no such element'}}), 404, {'content-type': 'application/json'}
 
-  print("making uuid")
-  # TODO: make the uuid persistent somehow
-  unique_id = str(uuid.uuid1())
+  unique_id = result.path.replace('/', '-')
   session.elements[unique_id] = result
   return json.dumps({'value' : {'ELEMENT' : unique_id}}), 200, {'content-type': 'application/json'}
 
