@@ -6,12 +6,15 @@ from flask import Flask, request, Response
 import uuid
 import json
 import time
+import sys
 
 import pyatspi
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 from lxml import etree
 
+from gi.repository import GObject
+from gi.repository import Gdk
 
 from app_roles import ROLE_NAMES
 
@@ -342,7 +345,20 @@ def session_element_value(session_id, element_id):
   print(element.queryText().characterCount)
   print(element.queryText().caretOffset)
 
-  textElement = element.queryEditableText()
-  # textElement.setCaretOffset(textElement.characterCount)
-  textElement.insertText(-1, text, len(text))
-  return json.dumps({'value' : None }), 200, {'content-type': 'application/json'}
+  try:
+    textElement = element.queryEditableText()
+    # textElement.setCaretOffset(textElement.characterCount)
+    textElement.insertText(-1, text, len(text))
+    return json.dumps({'value' : None }), 200, {'content-type': 'application/json'}
+  except NotImplementedError:
+    action = element.queryAction()
+    print(dir(action))
+    for i in range(0, action.nActions):
+      if action.getName(i) == 'SetFocus':
+        action.doAction(i)
+        for ch in text:
+	        keyval = Gdk.unicode_to_keyval(ord(ch))
+	        pyatspi.Registry.generateKeyboardEvent(keyval, None, pyatspi.KEY_SYM)
+        break
+    return json.dumps({'value':None}), 200, {'content-type': 'application/json'}
+
