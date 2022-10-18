@@ -49,8 +49,6 @@ rescue => e
   raise e
 end
 
-require 'appium_lib'
-
 ret = system(ARGV.fetch(0))
 
 Process.kill('KILL', driver_pid)
