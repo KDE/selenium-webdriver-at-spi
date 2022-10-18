@@ -292,21 +292,33 @@ def session_element_click(session_id, element_id):
       break
   return json.dumps({'value':None}), 200, {'content-type': 'application/json'}
 
-@app.route('/session/<session_id>/element/<element_id>/text', methods=['GET','POST'])
+@app.route('/session/<session_id>/element/<element_id>/text', methods=['GET'])
 def session_element_text(session_id, element_id):
-  # TODO: spec review
-
-  print("!!!!!!!!!!!!!")
-  print(request.url)
-  print(session_id)
-  print(request.args)
-  print(request.data)
   session = sessions[session_id]
   element = session.elements[element_id]
-  # TODO should try queryText and if that excepts use the name
-  print(element.name)
-  print(element.description)
-  return json.dumps({'value':element.name})
+  try:
+    textElement = element.queryText()
+    return json.dumps({'value': textElement.getText()})
+  except NotImplementedError:
+    return json.dumps({'value': element.name})
+
+@app.route('/session/<session_id>/element/<element_id>/enabled', methods=['GET'])
+def session_element_enabled(session_id, element_id):
+  session = sessions[session_id]
+  element = session.elements[element_id]
+  return json.dumps({'value': element.getStates().contains(pyatspi.STATE_ENABLED)})
+
+@app.route('/session/<session_id>/element/<element_id>/displayed', methods=['GET'])
+def session_element_displayed(session_id, element_id):
+  session = sessions[session_id]
+  element = session.elements[element_id]
+  return json.dumps({'value': element.getStates().contains(pyatspi.STATE_VISIBLE) and element.getStates().contains(pyatspi.STATE_SHOWING)})
+
+@app.route('/session/<session_id>/element/<element_id>/selected', methods=['GET'])
+def session_element_selected(session_id, element_id):
+  session = sessions[session_id]
+  element = session.elements[element_id]
+  return json.dumps({'value': element.getStates().contains(pyatspi.STATE_SELECTED)})
 
 @app.route('/session/<session_id>/element/<element_id>/attribute/<name>', methods=['GET'])
 def session_element_attribute(session_id, element_id, name):
