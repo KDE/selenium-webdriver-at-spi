@@ -51,31 +51,6 @@ def status():
   return json.dumps(body), 200, {'content-type': 'application/json'}
 
 
-def _createNode(doc, accessible, parentElement):
-  # role = accessible.getRole()
-  # name = ROLE_NAMES[role]
-  # if not name:
-  #   raise
-
-  e = minidom.Element(accessible.getRoleName().replace(" ","_"))
-
-  nameA = doc.createAttribute('name')
-  roleA = doc.createAttribute('role')
-  descA = doc.createAttribute('description')
-  e.setAttributeNode(nameA)
-  e.setAttributeNode(roleA)
-  e.setAttributeNode(descA)
-  e.setAttribute("name", accessible.name)
-  e.setAttribute("role", str(int(accessible.getRole())))
-  e.setAttribute("description", accessible.description)
-
-  for i in range(0, accessible.childCount):
-    _createNode(doc, accessible.getChildAtIndex(i), e)
-
-  parentElement.appendChild(e)
-
-
-
 def _createNode2(accessible, parentElement):
   # role = accessible.getRole()
   # name = ROLE_NAMES[role]
