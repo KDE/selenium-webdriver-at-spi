@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# SPDX-FileCopyrightText: 2021 Harald Sitter <sitter@kde.org>
+# SPDX-FileCopyrightText: 2021-2022 Harald Sitter <sitter@kde.org>
 
 from os import access
 from platform import platform
@@ -11,6 +11,7 @@ import sys
 import pprint
 import os
 import shlex
+import signal
 
 import pyatspi
 from xml.dom import minidom
@@ -97,6 +98,7 @@ class Session:
     self.id = str(uuid.uuid1())
     self.elements = {} # a cache to hold elements between finding and interacting with
     self.browsing_context = None
+    self.pid = -1
 
     blob = json.loads(request.data)
     print(request.data)
@@ -113,6 +115,7 @@ class Session:
     context.setenv('KIO_DISABLE_CACHE_CLEANER', '1') # don't dangle
 
     def on_launched(context, info, platform_data):
+      self.pid = platform_data['pid']
       # TODO retry finding a bunch of times instead of doing fixed sleeps
       time.sleep(5)
       for desktop_index in range(pyatspi.Registry.getDesktopCount()):
@@ -129,7 +132,7 @@ class Session:
           print(app.props)
           print(app.get_process_id())
           print(app.id)
-          if app.get_process_id() == platform_data['pid']:
+          if app.get_process_id() == self.pid:
             self.browsing_context = app
             break
         if self.browsing_context:
@@ -144,6 +147,9 @@ class Session:
       appinfo = Gio.AppInfo.create_from_commandline(desired_app, None, Gio.AppInfoCreateFlags.NONE)
       appinfo.launch([], context)
     print(self.browsing_context)
+
+  def close(self) -> None:
+    os.kill(self.pid, signal.SIGKILL)
 
 @app.route('/session', methods=['GET','POST', 'DELETE'])
 def session():
@@ -171,6 +177,11 @@ def session():
 def session_delete(session_id):
   if request.method == 'DELETE':
     # TODO spec review
+    session = sessions[session_id]
+    if not session:
+      return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    session.close()
     return json.dumps({'value':None})
 
 def locator(session, strategy, selector, start):
