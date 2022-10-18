@@ -2,17 +2,22 @@
 # SPDX-FileCopyrightText: 2021 Harald Sitter <sitter@kde.org>
 
 from os import access
+from platform import platform
 from flask import Flask, request, Response
 import uuid
 import json
 import time
 import sys
+import pprint
+import os
+import shlex
 
 import pyatspi
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 from lxml import etree
 
+from gi.repository import Gio
 from gi.repository import GObject
 from gi.repository import Gdk
 
@@ -114,28 +119,56 @@ def index():
 #   REST app functions to the Session object.
 class Session:
   def __init__(self) -> None:
-      self.id = str(uuid.uuid1())
-      self.elements = {} # a cache to hold elements between finding and interacting with
-      self.browsing_context = None
+    self.id = str(uuid.uuid1())
+    self.elements = {} # a cache to hold elements between finding and interacting with
+    self.browsing_context = None
 
-      blob = json.loads(request.data)
-      print(request.data)
-      # TODO the blob from ruby is much more complicated god only knows why
-      desired_app = None
-      if 'desiredCapabilities' in blob:
-        desired_app = blob['desiredCapabilities']['app']
-      else:
-        desired_app = blob['capabilities']['alwaysMatch']['appium:app']
+    blob = json.loads(request.data)
+    print(request.data)
+    # TODO the blob from ruby is much more complicated god only knows why
+    desired_app = None
+    if 'desiredCapabilities' in blob:
+      desired_app = blob['desiredCapabilities']['app']
+    else:
+      desired_app = blob['capabilities']['alwaysMatch']['appium:app']
 
+    context = Gio.AppLaunchContext()
+    context.setenv('QT_ACCESSIBILITY', '1')
+    context.setenv('QT_LINUX_ACCESSIBILITY_ALWAYS_ON', '1')
+    context.setenv('KIO_DISABLE_CACHE_CLEANER', '1') # don't dangle
+
+    def on_launched(context, info, platform_data):
+      # TODO retry finding a bunch of times instead of doing fixed sleeps
+      time.sleep(5)
       for desktop_index in range(pyatspi.Registry.getDesktopCount()):
         desktop = pyatspi.Registry.getDesktop(desktop_index)
         for app in desktop:
-          if app.name == desired_app:
+          print('=======')
+          print(app.name)
+          print(app.description)
+          print(app.getApplication())
+          print(app.getAttributes())
+          print(app.toolkitName)
+          print(app.path)
+          print(app.role)
+          print(app.props)
+          print(app.get_process_id())
+          print(app.id)
+          if app.get_process_id() == platform_data['pid']:
             self.browsing_context = app
             break
         if self.browsing_context:
           break
       # TODO raise if no context?
+    context.connect("launched", on_launched)
+
+    if desired_app.endswith(".desktop"):
+      appinfo = Gio.DesktopAppInfo.new(desired_app)
+      appinfo.launch([], context)
+    else:
+      appinfo = Gio.AppInfo.create_from_commandline(desired_app, None, Gio.AppInfoCreateFlags.NONE)
+      appinfo.launch([], context)
+    print(self.browsing_context)
 
 @app.route('/session', methods=['GET','POST', 'DELETE'])
 def session():
