@@ -8,8 +8,8 @@ $stdout.sync = true # force immediate flushing without internal caching
 
 # AT_SPI_BUS_LAUNCHER_PATH = ENV.fetch('AT_SPI_BUS_LAUNCHER_PATH')
 # AT_SPI_REGISTRY_PATH = ENV.fetch('AT_SPI_REGISTRY_PATH')
-AT_SPI_BUS_LAUNCHER_PATH = '/usr/libexec/at-spi-bus-launcher'
-AT_SPI_REGISTRY_PATH = '/usr/libexec/at-spi2-registryd'
+AT_SPI_BUS_LAUNCHER_PATH = ENV.fetch('AT_SPI_BUS_LAUNCHER_PATH', '/usr/libexec/at-spi-bus-launcher')
+AT_SPI_REGISTRY_PATH = ENV.fetch('AT_SPI_REGISTRY_PATH', '/usr/libexec/at-spi2-registryd')
 warn "Testing with #{AT_SPI_BUS_LAUNCHER_PATH} and #{AT_SPI_REGISTRY_PATH}"
 
 launcher_pid = spawn(AT_SPI_BUS_LAUNCHER_PATH, '--launch-immediately')
