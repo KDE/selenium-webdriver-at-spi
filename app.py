@@ -35,11 +35,11 @@ from app_roles import ROLE_NAMES
 os.environ['AT_SPI_BUS_LAUNCHER_PATH'] = '/usr/libexec/at-spi-bus-launcher'
 os.environ['AT_SPI_REGISTRY_PATH'] = "/usr/lib/at-spi2-core/at-spi2-registryd"
 
-# Using flask because I know nothing about writing REST in python and it seemed the most straight-forward framework.
 sys.stdout = sys.stderr
-app = Flask(__name__)
 sessions = {} # global dict of open sessions
 
+# Using flask because I know nothing about writing REST in python and it seemed the most straight-forward framework.
+app = Flask(__name__)
 
 @app.route('/status', methods=['GET'])
 def status():
