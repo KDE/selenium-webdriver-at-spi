@@ -49,6 +49,10 @@ rescue => e
   raise e
 end
 
+# TODO move this elsewhere
+system('pip3', 'install', 'flask') || raise
+ENV['PATH'] = "#{Dir.home}/.local/bin:#{ENV.fetch('PATH')}"
+
 ret = system(ARGV.fetch(0))
 
 Process.kill('KILL', driver_pid)
