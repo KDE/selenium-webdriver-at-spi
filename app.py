@@ -379,8 +379,8 @@ def session_element_value(session_id, element_id):
       if action.getName(i) == 'SetFocus':
         action.doAction(i)
         for ch in text:
-	        keyval = Gdk.unicode_to_keyval(ord(ch))
-	        pyatspi.Registry.generateKeyboardEvent(keyval, None, pyatspi.KEY_SYM)
+          keyval = Gdk.unicode_to_keyval(ord(ch))
+          pyatspi.Registry.generateKeyboardEvent(keyval, None, pyatspi.KEY_SYM)
         break
     return json.dumps({'value':None}), 200, {'content-type': 'application/json'}
 
