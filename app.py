@@ -194,11 +194,11 @@ def locator(session, strategy, selector, start):
     if strategy == 'accessibility id':
       pass # FIXME not implemented! https://codereview.qt-project.org/c/qt/qtbase/+/425946
     elif strategy == 'class name': # pyatspi strings "[ roleName | name ]"
-      pred = lambda x: str(x) == selector and x.getState().contains(pyatspi.STATE_VISIBLE)
+      pred = lambda x: str(x) == selector and (x.getState().contains(pyatspi.STATE_VISIBLE) or x.getState().contains(pyatspi.STATE_SENSITIVE))
     elif strategy == 'name':
-      pred = lambda x: x.name == selector and x.getState().contains(pyatspi.STATE_VISIBLE)
+      pred = lambda x: x.name == selector and (x.getState().contains(pyatspi.STATE_VISIBLE) or x.getState().contains(pyatspi.STATE_SENSITIVE))
     elif strategy == 'description':
-      pred = lambda x: x.description == selector and x.getState().contains(pyatspi.STATE_VISIBLE)
+      pred = lambda x: x.description == selector and (x.getState().contains(pyatspi.STATE_VISIBLE) or x.getState().contains(pyatspi.STATE_SENSITIVE))
     # there are also id and accessibleId but they seem not ever set. Not sure what to make of that :shrug:
     result = pyatspi.findDescendant(start, pred)
     if not result:
