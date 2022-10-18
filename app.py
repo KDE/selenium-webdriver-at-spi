@@ -153,9 +153,6 @@ class Session:
 
 @app.route('/session', methods=['GET','POST', 'DELETE'])
 def session():
-  # TODO keyboard handling .. currently only here for testing
-  pyatspi.Registry.generateKeyboardEvent(0xffe7, None, pyatspi.KEY_RELEASE)
-
   if request.method == 'POST':
     # TODO:
     # https://www.w3.org/TR/webdriver1/#new-session
@@ -247,15 +244,6 @@ def session_element(session_id=None):
   start = session.browsing_context
   if not start: # browsing context (no longer) valid
     return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
-
-  # doc = minidom.Document()
-  # _createNode(doc, start, doc)
-  # answer = doc.toprettyxml()
-  # print(answer)
-  # # root = ET.fromstring(answer)
-  # doc = etree.parse(answer)
-  # # x = root.find("//label[starts-with(@name, \"We are sorry\")]")
-  # # print(x)
 
   return locator(session, strategy, selector, start)
 
