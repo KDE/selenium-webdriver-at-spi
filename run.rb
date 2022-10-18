@@ -6,6 +6,21 @@
 
 $stdout.sync = true # force immediate flushing without internal caching
 
+OptionParser.new do |opts|
+  opts.banner = "Usage: #{$0} ARGS"
+  opts.separator('')
+
+  opts.on('--at-spi-bus-launcher PATH',
+          'Path to --at-spi-bus-launcher bin to use for testing.') do |v|
+    ENV['AT_SPI_BUS_LAUNCHER_PATH'] = v
+  end
+
+  opts.on('--at-spi-registryd PATH',
+          'Path to registry bin to use for testing.') do |v|
+    ENV['AT_SPI_REGISTRY_PATH'] = v
+  end
+end.parse!
+
 # AT_SPI_BUS_LAUNCHER_PATH = ENV.fetch('AT_SPI_BUS_LAUNCHER_PATH')
 # AT_SPI_REGISTRY_PATH = ENV.fetch('AT_SPI_REGISTRY_PATH')
 AT_SPI_BUS_LAUNCHER_PATH = ENV.fetch('AT_SPI_BUS_LAUNCHER_PATH', '/usr/libexec/at-spi-bus-launcher')
