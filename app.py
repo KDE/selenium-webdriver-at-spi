@@ -206,7 +206,7 @@ def locator(session, strategy, selector, start):
 
   unique_id = result.path.replace('/', '-')
   session.elements[unique_id] = result
-  return json.dumps({'value' : {'ELEMENT' : unique_id}}), 200, {'content-type': 'application/json'}
+  return json.dumps({'value': {'element-6066-11e4-a52e-4f735466cecf' : unique_id}}), 200, {'content-type': 'application/json'}
 
 @app.route('/session/<session_id>/element', methods=['GET','POST'])
 def session_element(session_id=None):
