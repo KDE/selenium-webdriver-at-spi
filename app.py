@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # SPDX-FileCopyrightText: 2021-2022 Harald Sitter <sitter@kde.org>
 
+from datetime import datetime, timedelta
 from os import access
 from platform import platform
 from flask import Flask, request, Response
@@ -99,15 +100,29 @@ class Session:
     self.elements = {} # a cache to hold elements between finding and interacting with
     self.browsing_context = None
     self.pid = -1
+    self.timeouts = {'script': 30000, 'pageLoad': 300000, 'implicit': 0}
 
     blob = json.loads(request.data)
     print(request.data)
     # TODO the blob from ruby is much more complicated god only knows why
     desired_app = None
+    desired_timeouts = None
     if 'desiredCapabilities' in blob:
       desired_app = blob['desiredCapabilities']['app']
+      desired_timeouts = blob['desiredCapabilities']['timeouts']
     else:
       desired_app = blob['capabilities']['alwaysMatch']['appium:app']
+      desired_timeouts = blob['capabilities']['alwaysMatch']['timeouts']
+
+    if desired_timeouts:
+      if 'script' in desired_timeouts:
+        self.timeouts['script'] = desired_timeouts['script']
+      if 'pageLoad' in desired_timeouts:
+        self.timeouts['pageLoad'] = desired_timeouts['pageLoad']
+      if 'implicit' in desired_timeouts:
+        self.timeouts['implicit'] = desired_timeouts['implicit']
+
+    end_time = datetime.now() + timedelta(milliseconds=self.timeouts['implicit'])
 
     context = Gio.AppLaunchContext()
     context.setenv('QT_ACCESSIBILITY', '1')
@@ -116,28 +131,32 @@ class Session:
 
     def on_launched(context, info, platform_data):
       self.pid = platform_data['pid']
-      # TODO retry finding a bunch of times instead of doing fixed sleeps
-      time.sleep(5)
-      for desktop_index in range(pyatspi.Registry.getDesktopCount()):
-        desktop = pyatspi.Registry.getDesktop(desktop_index)
-        for app in desktop:
-          print('=======')
-          print(app.name)
-          print(app.description)
-          print(app.getApplication())
-          print(app.getAttributes())
-          print(app.toolkitName)
-          print(app.path)
-          print(app.role)
-          print(app.props)
-          print(app.get_process_id())
-          print(app.id)
-          if app.get_process_id() == self.pid:
-            self.browsing_context = app
+      print("launched "  + str(self.pid))
+
+      while datetime.now() < end_time:
+        for desktop_index in range(pyatspi.Registry.getDesktopCount()):
+          desktop = pyatspi.Registry.getDesktop(desktop_index)
+          for app in desktop:
+            print('=======')
+            print(app.name)
+            print(app.description)
+            print(app.getApplication())
+            print(app.getAttributes())
+            print(app.toolkitName)
+            print(app.path)
+            print(app.role)
+            print(app.props)
+            print(app.get_process_id())
+            print(app.id)
+            if app.get_process_id() == self.pid:
+              self.browsing_context = app
+              break
+          if self.browsing_context:
             break
+        # TODO raise if no context?
         if self.browsing_context:
           break
-      # TODO raise if no context?
+
     context.connect("launched", on_launched)
 
     if desired_app.endswith(".desktop"):
@@ -161,13 +180,16 @@ def session():
     print(request)
     sessions[session.id] = session
     print(sessions)
+
+    if session.browsing_context is None:
+      return json.dumps({'value': {'error': 'session not created '}}), 500, {'content-type': 'application/json'}
+
     return json.dumps({'value': {'sessionId': session.id, 'capabilities': {"app": session.browsing_context.name}}}), 200, {'content-type': 'application/json'}
   elif request.method == 'GET':
     # TODO impl
     print(request)
   elif request.method == 'DELETE':
     # TODO spec review
-
     return json.dumps({'value':None})
 
 @app.route('/session/<session_id>', methods=['DELETE'])
@@ -181,44 +203,62 @@ def session_delete(session_id):
     session.close()
     return json.dumps({'value':None})
 
+@app.route('/session/<session_id>/timeouts/implicit_wait', methods=['POST'])
+def session_implicit_wait(session_id):
+  session = sessions[session_id]
+  if not session:
+    return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+  blob = json.loads(request.data)
+  ms = blob['ms']
+
+  session.timeouts['implicit'] = ms
+  return json.dumps({'value':None})
+
 def locator(session, strategy, selector, start):
   # pyatspi.findDescendant(start, lambda x: print(x))
 
+  end_time = datetime.now() + timedelta(milliseconds=session.timeouts['implicit'])
   result = None
-  if strategy == 'xpath':
-    print("-- xml")
-    doc = _createNode2(start, None)
-    print(etree.tostring(doc, pretty_print=True))
-    for c in doc.xpath(selector):
-      print(c)
-      path = [int(x) for x in c.get('path').split()]
-      item = session.browsing_context # path is relative to the app root, not our start item!
-      for i in path:
-        item = item[i]
-      if c.get('name') != item.name or c.get('description') != item.description:
-        return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
-      print(c)
-      print(c.get('name'))
-      print(pyatspi.getPath(item))
-      print(item)
-      result = item
+
+  while datetime.now() < end_time:
+    if strategy == 'xpath':
+      print("-- xml")
+      doc = _createNode2(start, None)
+      print(etree.tostring(doc, pretty_print=True))
+      for c in doc.xpath(selector):
+        print(c)
+        path = [int(x) for x in c.get('path').split()]
+        item = session.browsing_context # path is relative to the app root, not our start item!
+        for i in path:
+          item = item[i]
+        if c.get('name') != item.name or c.get('description') != item.description:
+          return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
+        print(c)
+        print(c.get('name'))
+        print(pyatspi.getPath(item))
+        print(item)
+        result = item
+        break
+      print("-- xml")
+    else:
+      # TODO can I switch this in python +++ raise on unmapped strategy
+      pred = None
+      if strategy == 'accessibility id':
+        pass # FIXME not implemented! https://codereview.qt-project.org/c/qt/qtbase/+/425946
+      elif strategy == 'class name': # pyatspi strings "[ roleName | name ]"
+        pred = lambda x: str(x) == selector and (x.getState().contains(pyatspi.STATE_VISIBLE) or x.getState().contains(pyatspi.STATE_SENSITIVE))
+      elif strategy == 'name':
+        pred = lambda x: x.name == selector and (x.getState().contains(pyatspi.STATE_VISIBLE) or x.getState().contains(pyatspi.STATE_SENSITIVE))
+      elif strategy == 'description':
+        pred = lambda x: x.description == selector and (x.getState().contains(pyatspi.STATE_VISIBLE) or x.getState().contains(pyatspi.STATE_SENSITIVE))
+      # there are also id and accessibleId but they seem not ever set. Not sure what to make of that :shrug:
+      result = pyatspi.findDescendant(start, pred)
+    if result:
       break
-    print("-- xml")
-  else:
-    # TODO can I switch this in python +++ raise on unmapped strategy
-    pred = None
-    if strategy == 'accessibility id':
-      pass # FIXME not implemented! https://codereview.qt-project.org/c/qt/qtbase/+/425946
-    elif strategy == 'class name': # pyatspi strings "[ roleName | name ]"
-      pred = lambda x: str(x) == selector and (x.getState().contains(pyatspi.STATE_VISIBLE) or x.getState().contains(pyatspi.STATE_SENSITIVE))
-    elif strategy == 'name':
-      pred = lambda x: x.name == selector and (x.getState().contains(pyatspi.STATE_VISIBLE) or x.getState().contains(pyatspi.STATE_SENSITIVE))
-    elif strategy == 'description':
-      pred = lambda x: x.description == selector and (x.getState().contains(pyatspi.STATE_VISIBLE) or x.getState().contains(pyatspi.STATE_SENSITIVE))
-    # there are also id and accessibleId but they seem not ever set. Not sure what to make of that :shrug:
-    result = pyatspi.findDescendant(start, pred)
-    if not result:
-      return json.dumps({'value':{'error': 'no such element'}}), 404, {'content-type': 'application/json'}
+
+  if not result:
+    return json.dumps({'value':{'error': 'no such element'}}), 404, {'content-type': 'application/json'}
 
   unique_id = result.path.replace('/', '-')
   session.elements[unique_id] = result
