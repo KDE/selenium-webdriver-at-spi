@@ -33,9 +33,6 @@ from app_roles import ROLE_NAMES
 # https://github.com/microsoft/WinAppDriver/blob/master/Docs/SupportedAPIs.md
 # https://www.freedesktop.org/wiki/Accessibility/PyAtSpi2Example/
 
-os.environ['AT_SPI_BUS_LAUNCHER_PATH'] = '/usr/libexec/at-spi-bus-launcher'
-os.environ['AT_SPI_REGISTRY_PATH'] = "/usr/lib/at-spi2-core/at-spi2-registryd"
-
 sys.stdout = sys.stderr
 sessions = {} # global dict of open sessions
 
