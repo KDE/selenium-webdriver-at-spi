@@ -315,6 +315,9 @@ def session_element_click(session_id, element_id):
     if action_name == 'Toggle':
       action.doAction(i)
       break
+    if action_name == 'SetFocus':
+      action.doAction(i)
+      # intentionally doesn't break. on it's own that's not sufficient
   return json.dumps({'value':None}), 200, {'content-type': 'application/json'}
 
 @app.route('/session/<session_id>/element/<element_id>/text', methods=['GET'])
