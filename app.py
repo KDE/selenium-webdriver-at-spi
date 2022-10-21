@@ -51,11 +51,6 @@ def status():
 
 
 def _createNode2(accessible, parentElement):
-  # role = accessible.getRole()
-  # name = ROLE_NAMES[role]
-  # if not name:
-  #   raise
-
   if not accessible:
     return
 
