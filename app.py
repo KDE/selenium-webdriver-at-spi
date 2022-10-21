@@ -428,3 +428,22 @@ def session_element_value(session_id, element_id):
         break
     return json.dumps({'value':None}), 200, {'content-type': 'application/json'}
 
+
+@app.route('/session/<session_id>/appium/device/press_keycode', methods=['POST'])
+def session_appium_device_press_keycode(session_id):
+  session = sessions[session_id]
+  if not session:
+    return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+  blob = json.loads(request.data)
+  keycode = blob['keycode']['keycode']
+  # Not doing anything with these for now
+  # metastate = blob['metastate']
+  # flags = blob['flags']
+  for ch in keycode:
+    keyval = Gdk.unicode_to_keyval(ord(ch))
+    # I Don't know why this doesn't work, also doesn't work with \033 as input. :((
+    # https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-24/gdk/gdkkeyuni.c
+    if ch == "\uE00C": keyval = 0xff1b # escape
+    pyatspi.Registry.generateKeyboardEvent(keyval, None, pyatspi.KEY_SYM)
+  return json.dumps({'value':None}), 200, {'content-type': 'application/json'}
