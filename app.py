@@ -13,6 +13,7 @@ import pprint
 import os
 import shlex
 import signal
+import subprocess
 
 import pyatspi
 from xml.dom import minidom
@@ -428,6 +429,42 @@ def session_element_value(session_id, element_id):
         break
     return json.dumps({'value':None}), 200, {'content-type': 'application/json'}
 
+@app.route('/session/<session_id>/appium/device/app_state', methods=['POST'])
+def session_appium_device_app_state(session_id):
+  session = sessions[session_id]
+  if not session:
+    return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+  blob = json.loads(request.data)
+  appId = blob['appId']
+
+  proc = subprocess.Popen('appidlister/build/bin/appidlister', stdout=subprocess.PIPE)
+  out, err = proc.communicate()
+
+  apps = json.loads(out)
+  print(apps)
+  if appId in apps.values():
+    return json.dumps({'value': 4}), 200, {'content-type': 'application/json'}
+  # TODO: implement rest of codes
+  return json.dumps({'value': 1}), 200, {'content-type': 'application/json'}
+
+@app.route('/session/<session_id>/appium/device/terminate_app', methods=['POST'])
+def session_appium_device_terminate_app(session_id):
+  session = sessions[session_id]
+  if not session:
+    return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+  blob = json.loads(request.data)
+  appId = blob['appId']
+
+  proc = subprocess.Popen('appidlister/build/bin/appidlister', stdout=subprocess.PIPE)
+  out, err = proc.communicate()
+
+  apps = json.loads(out)
+  if appId in apps.values():
+    pid = list(apps.keys())[list(apps.values()).index(appId)]
+    os.kill(int(pid), signal.SIGKILL)
+  return json.dumps({'value':None}), 200, {'content-type': 'application/json'}
 
 @app.route('/session/<session_id>/appium/device/press_keycode', methods=['POST'])
 def session_appium_device_press_keycode(session_id):
