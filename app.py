@@ -207,6 +207,15 @@ def session_implicit_wait(session_id):
   session.timeouts['implicit'] = ms
   return json.dumps({'value':None})
 
+@app.route('/session/<session_id>/source', methods=['GET'])
+def session_source(session_id):
+  session = sessions[session_id]
+  if not session:
+    return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+  doc = _createNode2(session.browsing_context, None)
+  return json.dumps({'value': etree.tostring(doc, pretty_print=True).decode("utf-8")})
+
 def locator(session, strategy, selector, start):
   # pyatspi.findDescendant(start, lambda x: print(x))
 
