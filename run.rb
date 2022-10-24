@@ -30,14 +30,17 @@ AT_SPI_REGISTRY_PATH = ENV.fetch('AT_SPI_REGISTRY_PATH', '/usr/libexec/at-spi2-r
 warn "Testing with #{AT_SPI_BUS_LAUNCHER_PATH} and #{AT_SPI_REGISTRY_PATH}"
 
 # TODO move this elsewhere
-system('pip3', 'install', '-r', 'requirements.txt', chdir: __dir__) || raise
-ENV['PATH'] = "#{Dir.home}/.local/bin:#{ENV.fetch('PATH')}"
+datadir = "/usr/share/selenium-webdriver-at-spi/"
+if File.exist?("#{datadir}/requirements.txt")
+  system('pip3', 'install', '-r', 'requirements.txt', chdir: datadir) || raise
+  ENV['PATH'] = "#{Dir.home}/.local/bin:#{ENV.fetch('PATH')}"
+end
 
 launcher_pid = spawn(AT_SPI_BUS_LAUNCHER_PATH, '--launch-immediately')
 registry_pid = spawn(AT_SPI_REGISTRY_PATH)
-driver_pid = spawn({ 'FLASK_ENV' => 'production', 'FLASK_APP' => 'app.py' },
+driver_pid = spawn({ 'FLASK_ENV' => 'production', 'FLASK_APP' => 'selenium-webdriver-at-spi.py' },
                    'flask', 'run', '--port', '4723', '--no-reload',
-                   chdir: __dir__)
+                   chdir: datadir)
 
 i = 0
 begin

@@ -54,6 +54,9 @@ def status():
 def _createNode2(accessible, parentElement):
   if not accessible:
     return
+  # A bit of aggressive filtering to not introspect chromium and firefox and the likes when using the desktop root.
+  if accessible.toolkitName != "Qt" and accessible.toolkitName != "at-spi-registry":
+    return
 
   roleName = accessible.getRoleName()
   e = None
@@ -65,9 +68,9 @@ def _createNode2(accessible, parentElement):
   e.set("name", accessible.name)
   e.set("role", str(int(accessible.getRole())))
   e.set("description", accessible.description)
-  path = pyatspi.getPath(accessible)
-  path_strs = [str(x) for x in path] # path is a list of ints for the indexes within the parents
-  e.set("path", ' '.join(path_strs))
+  # path = pyatspi.getPath(accessible)
+  # path_strs = [str(x) for x in path] # path is a list of ints for the indexes within the parents
+  # e.set("path", ' '.join(path_strs))
 
   for i in range(0, accessible.childCount):
     _createNode2(accessible.getChildAtIndex(i), e)
@@ -88,12 +91,14 @@ def index():
 # TODO: should we expose the root scope somehow? requires a special variant of session and moving logic from the
 #   REST app functions to the Session object.
 class Session:
+
   def __init__(self) -> None:
     self.id = str(uuid.uuid1())
     self.elements = {} # a cache to hold elements between finding and interacting with
     self.browsing_context = None
     self.pid = -1
     self.timeouts = {'script': 30000, 'pageLoad': 300000, 'implicit': 0}
+    self.launched = False
 
     blob = json.loads(request.data)
     print(request.data)
@@ -115,6 +120,11 @@ class Session:
       if 'implicit' in desired_timeouts:
         self.timeouts['implicit'] = desired_timeouts['implicit']
 
+    if desired_app == 'Root':
+      self.browsing_context = pyatspi.Registry.getDesktop(0) # NB: at the time of writing there can only be one desktop ever
+      return
+
+    self.launched = True
     end_time = datetime.now() + timedelta(milliseconds=self.timeouts['implicit'])
 
     context = Gio.AppLaunchContext()
@@ -161,7 +171,8 @@ class Session:
     print(self.browsing_context)
 
   def close(self) -> None:
-    os.kill(self.pid, signal.SIGKILL)
+    if self.launched:
+      os.kill(self.pid, signal.SIGKILL)
 
 @app.route('/session', methods=['GET','POST', 'DELETE'])
 def session():
@@ -256,6 +267,7 @@ def locator(session, strategy, selector, start):
         pred = lambda x: x.description == selector and (x.getState().contains(pyatspi.STATE_VISIBLE) or x.getState().contains(pyatspi.STATE_SENSITIVE))
       # there are also id and accessibleId but they seem not ever set. Not sure what to make of that :shrug:
       result = pyatspi.findDescendant(start, pred)
+      print(result)
     if result:
       break
 
@@ -363,6 +375,8 @@ def session_element_attribute(session_id, element_id, name):
   if not element:
     return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
 
+  print(request.data)
+
   print(pyatspi.STATE_VALUE_TO_NAME)
   result = None
   for value, string in pyatspi.STATE_VALUE_TO_NAME.items():
@@ -418,6 +432,8 @@ def session_element_value(session_id, element_id):
     textElement.insertText(-1, text, len(text))
     return json.dumps({'value' : None }), 200, {'content-type': 'application/json'}
   except NotImplementedError:
+    print(element)
+    print(str(element))
     action = element.queryAction()
     print(dir(action))
     for i in range(0, action.nActions):
@@ -473,7 +489,7 @@ def session_appium_device_press_keycode(session_id):
     return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
 
   blob = json.loads(request.data)
-  keycode = blob['keycode']['keycode']
+  keycode = blob['keycode']
   # Not doing anything with these for now
   # metastate = blob['metastate']
   # flags = blob['flags']
@@ -482,5 +498,6 @@ def session_appium_device_press_keycode(session_id):
     # I Don't know why this doesn't work, also doesn't work with \033 as input. :((
     # https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-24/gdk/gdkkeyuni.c
     if ch == "\uE00C": keyval = 0xff1b # escape
+    if ch == "\ue03d": keyval = 0xffeb # left meta
     pyatspi.Registry.generateKeyboardEvent(keyval, None, pyatspi.KEY_SYM)
   return json.dumps({'value':None}), 200, {'content-type': 'application/json'}
