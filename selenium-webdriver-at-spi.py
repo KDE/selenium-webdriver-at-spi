@@ -454,7 +454,7 @@ def session_appium_device_app_state(session_id):
   blob = json.loads(request.data)
   appId = blob['appId']
 
-  proc = subprocess.Popen('appidlister/build/bin/appidlister', stdout=subprocess.PIPE)
+  proc = subprocess.Popen('selenium-webdriver-at-spi-appidlister', stdout=subprocess.PIPE)
   out, err = proc.communicate()
 
   apps = json.loads(out)
@@ -473,7 +473,7 @@ def session_appium_device_terminate_app(session_id):
   blob = json.loads(request.data)
   appId = blob['appId']
 
-  proc = subprocess.Popen('appidlister/build/bin/appidlister', stdout=subprocess.PIPE)
+  proc = subprocess.Popen('selenium-webdriver-at-spi-appidlister', stdout=subprocess.PIPE)
   out, err = proc.communicate()
 
   apps = json.loads(out)
