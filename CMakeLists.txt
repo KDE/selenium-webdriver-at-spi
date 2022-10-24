@@ -15,10 +15,16 @@ include(KDECompilerSettings)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Disable legacy stuff to get rid of some deprecation warnings. Notably duplicated QProcess::finished overloads.
+add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0x050e00)
+
+find_package(KF5 5.99 REQUIRED COMPONENTS WindowSystem)
+
+add_subdirectory(appidlister)
+
 install(PROGRAMS run.rb
     RENAME selenium-webdriver-at-spi-run
     DESTINATION ${CMAKE_INSTALL_BINDIR})
-    #PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 install(FILES selenium-webdriver-at-spi.py app_roles.py requirements.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/selenium-webdriver-at-spi)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
