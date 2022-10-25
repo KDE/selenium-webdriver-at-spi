@@ -99,7 +99,7 @@ class Session:
         self.elements = {}  # a cache to hold elements between finding and interacting with
         self.browsing_context = None
         self.pid = -1
-        self.timeouts = {'script': 30000, 'pageLoad': 300000, 'implicit': 0}
+        self.timeouts = {'script': 30000, 'pageLoad': 300000, 'implicit': 5000} # implicit deviates from spec, 0 is unreasonable
         self.launched = False
 
         blob = json.loads(request.data)
