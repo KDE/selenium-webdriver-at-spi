@@ -30,7 +30,7 @@ AT_SPI_REGISTRY_PATH = ENV.fetch('AT_SPI_REGISTRY_PATH', '/usr/libexec/at-spi2-r
 warn "Testing with #{AT_SPI_BUS_LAUNCHER_PATH} and #{AT_SPI_REGISTRY_PATH}"
 
 # TODO move this elsewhere
-datadir = File.absolute_path('../share/selenium-webdriver-at-spi/')
+datadir = File.absolute_path("#{__dir__}/../share/selenium-webdriver-at-spi/")
 if File.exist?("#{datadir}/requirements.txt")
   system('pip3', 'install', '-r', 'requirements.txt', chdir: datadir) || raise
   ENV['PATH'] = "#{Dir.home}/.local/bin:#{ENV.fetch('PATH')}"
