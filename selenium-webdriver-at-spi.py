@@ -109,10 +109,12 @@ class Session:
         desired_timeouts = None
         if 'desiredCapabilities' in blob:
             desired_app = blob['desiredCapabilities']['app']
-            desired_timeouts = blob['desiredCapabilities']['timeouts']
+            if 'timeouts' in blob['desiredCapabilities']:
+                desired_timeouts = blob['desiredCapabilities']['timeouts']
         else:
             desired_app = blob['capabilities']['alwaysMatch']['appium:app']
-            desired_timeouts = blob['capabilities']['alwaysMatch']['timeouts']
+            if 'timeouts' in blob['capabilities']['alwaysMatch']:
+                desired_timeouts = blob['capabilities']['alwaysMatch']['timeouts']
 
         if desired_timeouts:
             if 'script' in desired_timeouts:
