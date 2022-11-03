@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # SPDX-FileCopyrightText: 2022 Harald Sitter <sitter@kde.org>
 
+require 'logger'
 require 'optparse'
 
 $stdout.sync = true # force immediate flushing without internal caching
@@ -23,19 +24,23 @@ OptionParser.new do |opts|
   end
 end.parse!
 
+logger = Logger.new($stdout)
+
 # AT_SPI_BUS_LAUNCHER_PATH = ENV.fetch('AT_SPI_BUS_LAUNCHER_PATH')
 # AT_SPI_REGISTRY_PATH = ENV.fetch('AT_SPI_REGISTRY_PATH')
 AT_SPI_BUS_LAUNCHER_PATH = ENV.fetch('AT_SPI_BUS_LAUNCHER_PATH', '/usr/libexec/at-spi-bus-launcher')
 AT_SPI_REGISTRY_PATH = ENV.fetch('AT_SPI_REGISTRY_PATH', '/usr/libexec/at-spi2-registryd')
-warn "Testing with #{AT_SPI_BUS_LAUNCHER_PATH} and #{AT_SPI_REGISTRY_PATH}"
+logger.warn "Testing with #{AT_SPI_BUS_LAUNCHER_PATH} and #{AT_SPI_REGISTRY_PATH}"
 
 # TODO move this elsewhere
+logger.info 'Installing dependencies'
 datadir = File.absolute_path("#{__dir__}/../share/selenium-webdriver-at-spi/")
 if File.exist?("#{datadir}/requirements.txt")
   system('pip3', 'install', '-r', 'requirements.txt', chdir: datadir) || raise
   ENV['PATH'] = "#{Dir.home}/.local/bin:#{ENV.fetch('PATH')}"
 end
 
+logger.info 'Starting supporting services'
 launcher_pid = spawn(AT_SPI_BUS_LAUNCHER_PATH, '--launch-immediately')
 registry_pid = spawn(AT_SPI_REGISTRY_PATH)
 driver_pid = spawn({ 'FLASK_ENV' => 'production', 'FLASK_APP' => 'selenium-webdriver-at-spi.py' },
@@ -49,14 +54,16 @@ begin
 rescue => e
   i += 1
   if i < 30
-    warn 'not up yet'
+    logger.info 'not up yet'
     sleep 0.5
     retry
   end
   raise e
 end
 
+logger.info 'starting test'
 ret = system(ARGV.fetch(0))
+logger.info 'tests done'
 
 system('ps aux')
 
@@ -66,4 +73,5 @@ Process.kill('KILL', launcher_pid)
 
 system('ps aux')
 
+logger.info 'run.rb exiting'
 ret ? exit : abort
