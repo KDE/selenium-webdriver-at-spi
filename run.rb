@@ -58,8 +58,12 @@ end
 
 ret = system(ARGV.fetch(0))
 
+system('ps aux')
+
 Process.kill('KILL', driver_pid)
 Process.kill('KILL', registry_pid)
 Process.kill('KILL', launcher_pid)
+
+system('ps aux')
 
 ret ? exit : abort
