@@ -9,6 +9,11 @@ require 'optparse'
 
 $stdout.sync = true # force immediate flushing without internal caching
 
+unless ENV.include?('CUSTOM_BUS')
+  ENV['CUSTOM_BUS'] = '1'
+  exec('dbus-run-session', '--', __FILE__, *ARGV)
+end
+
 OptionParser.new do |opts|
   opts.banner = "Usage: #{$0} ARGS"
   opts.separator('')
