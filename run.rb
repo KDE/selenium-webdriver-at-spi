@@ -9,9 +9,15 @@ require 'optparse'
 
 $stdout.sync = true # force immediate flushing without internal caching
 
+logger = Logger.new($stdout)
+
 unless ENV.include?('CUSTOM_BUS')
+  logger.info('starting dbus session')
   ENV['CUSTOM_BUS'] = '1'
   exec('dbus-run-session', '--', __FILE__, *ARGV)
+  logger.info('dbus session ended')
+  sleep(5)
+  system('ps aux')
 end
 
 OptionParser.new do |opts|
@@ -28,8 +34,6 @@ OptionParser.new do |opts|
     ENV['AT_SPI_REGISTRY_PATH'] = v
   end
 end.parse!
-
-logger = Logger.new($stdout)
 
 # AT_SPI_BUS_LAUNCHER_PATH = ENV.fetch('AT_SPI_BUS_LAUNCHER_PATH')
 # AT_SPI_REGISTRY_PATH = ENV.fetch('AT_SPI_REGISTRY_PATH')
