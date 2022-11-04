@@ -14,7 +14,7 @@ logger = Logger.new($stdout)
 unless ENV.include?('CUSTOM_BUS')
   logger.info('starting dbus session')
   ENV['CUSTOM_BUS'] = '1'
-  exec('dbus-run-session', '--', __FILE__, *ARGV)
+  system('dbus-run-session', '--', __FILE__, *ARGV)
   logger.info('dbus session ended')
   sleep(5)
   system('ps aux')
