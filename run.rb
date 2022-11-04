@@ -82,5 +82,5 @@ Process.kill('KILL', launcher_pid)
 
 system('ps aux')
 
-logger.info 'run.rb exiting'
+logger.info "run.rb exiting #{ret}"
 ret ? exit : abort
