@@ -14,10 +14,11 @@ logger = Logger.new($stdout)
 unless ENV.include?('CUSTOM_BUS')
   logger.info('starting dbus session')
   ENV['CUSTOM_BUS'] = '1'
-  system('dbus-run-session', '--', __FILE__, *ARGV)
+  ret = system('dbus-run-session', '--', __FILE__, *ARGV)
   logger.info('dbus session ended')
   sleep(5)
   system('ps aux')
+  ret ? exit : abort
 end
 
 OptionParser.new do |opts|
