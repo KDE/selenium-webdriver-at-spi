@@ -77,9 +77,9 @@ logger.info 'tests done'
 
 system('ps aux')
 
-Process.kill('KILL', driver_pid)
-Process.kill('KILL', registry_pid)
-Process.kill('KILL', launcher_pid)
+Process.kill('TERM', driver_pid)
+Process.kill('TERM', registry_pid)
+Process.kill('TERM', launcher_pid)
 
 system('ps aux')
 
