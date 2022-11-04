@@ -14,9 +14,10 @@ logger = Logger.new($stdout)
 unless ENV.include?('CUSTOM_BUS')
   logger.info('starting dbus session')
   ENV['CUSTOM_BUS'] = '1'
+  # Using system() so we can print useful debug information after the run
+  # (useful to debug problems with shutdown of started processes)
   ret = system('dbus-run-session', '--', __FILE__, *ARGV)
   logger.info('dbus session ended')
-  sleep(5)
   system('ps aux')
   ret ? exit : abort
 end
@@ -75,13 +76,10 @@ logger.info 'starting test'
 ret = system(ARGV.fetch(0))
 logger.info 'tests done'
 
-system('ps aux')
-
+# NB: do not KILL the launcher, it only shutsdown the a11y dbus-daemon when terminated!
 Process.kill('TERM', driver_pid)
 Process.kill('TERM', registry_pid)
 Process.kill('TERM', launcher_pid)
-
-system('ps aux')
 
 logger.info "run.rb exiting #{ret}"
 ret ? exit : abort
