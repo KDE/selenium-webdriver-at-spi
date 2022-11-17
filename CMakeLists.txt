@@ -5,7 +5,7 @@ project(selenium-webdriver-at-spi)
 
 cmake_minimum_required(VERSION 3.22)
 find_package(ECM 5.99 REQUIRED NO_MODULE)
-set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR})
+set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
 
 include(FeatureSummary)
 include(KDEInstallDirs)
