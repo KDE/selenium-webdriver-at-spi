@@ -35,6 +35,7 @@ unless ENV.include?('CUSTOM_BUS')
   ret ? exit : abort
 end
 
+PORT = '4723'
 AT_SPI_BUS_LAUNCHER_PATH = find_program('at-spi-bus-launcher')
 AT_SPI_REGISTRY_PATH = find_program('at-spi2-registryd')
 logger.warn "Testing with #{AT_SPI_BUS_LAUNCHER_PATH} and #{AT_SPI_REGISTRY_PATH}"
@@ -51,13 +52,13 @@ logger.info 'Starting supporting services'
 launcher_pid = spawn(AT_SPI_BUS_LAUNCHER_PATH, '--launch-immediately')
 registry_pid = spawn(AT_SPI_REGISTRY_PATH)
 driver_pid = spawn({ 'FLASK_ENV' => 'production', 'FLASK_APP' => 'selenium-webdriver-at-spi.py' },
-                   'flask', 'run', '--port', '4723', '--no-reload',
+                   'flask', 'run', '--port', PORT, '--no-reload',
                    chdir: datadir)
 
 i = 0
 begin
   require 'net/http'
-  Net::HTTP.get(URI('http://localhost:4723/status'))
+  Net::HTTP.get(URI("http://localhost:#{PORT}/status"))
 rescue => e
   i += 1
   if i < 30
