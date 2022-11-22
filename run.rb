@@ -5,10 +5,23 @@
 # SPDX-FileCopyrightText: 2022 Harald Sitter <sitter@kde.org>
 
 require 'logger'
-require 'optparse'
+
+def find_program(name)
+  @atspi_paths ||= [
+    '/usr/lib/at-spi2-core/', # debians
+    '/usr/libexec/', # newer debians
+    '/usr/lib/at-spi2/', # suses
+    '/usr/libexec/at-spi2/' # newer suses
+  ]
+
+  @atspi_paths.each do |x|
+    path = "#{x}/#{name}"
+    return path if File.exist?(path)
+  end
+  raise "Could not resolve absolute path for #{name}; searched in #{@atspi_paths.join(', ')}"
+end
 
 $stdout.sync = true # force immediate flushing without internal caching
-
 logger = Logger.new($stdout)
 
 unless ENV.include?('CUSTOM_BUS')
@@ -22,25 +35,8 @@ unless ENV.include?('CUSTOM_BUS')
   ret ? exit : abort
 end
 
-OptionParser.new do |opts|
-  opts.banner = "Usage: #{$0} ARGS"
-  opts.separator('')
-
-  opts.on('--at-spi-bus-launcher PATH',
-          'Path to --at-spi-bus-launcher bin to use for testing.') do |v|
-    ENV['AT_SPI_BUS_LAUNCHER_PATH'] = v
-  end
-
-  opts.on('--at-spi-registryd PATH',
-          'Path to registry bin to use for testing.') do |v|
-    ENV['AT_SPI_REGISTRY_PATH'] = v
-  end
-end.parse!
-
-# AT_SPI_BUS_LAUNCHER_PATH = ENV.fetch('AT_SPI_BUS_LAUNCHER_PATH')
-# AT_SPI_REGISTRY_PATH = ENV.fetch('AT_SPI_REGISTRY_PATH')
-AT_SPI_BUS_LAUNCHER_PATH = ENV.fetch('AT_SPI_BUS_LAUNCHER_PATH', '/usr/libexec/at-spi-bus-launcher')
-AT_SPI_REGISTRY_PATH = ENV.fetch('AT_SPI_REGISTRY_PATH', '/usr/libexec/at-spi2-registryd')
+AT_SPI_BUS_LAUNCHER_PATH = find_program('at-spi-bus-launcher')
+AT_SPI_REGISTRY_PATH = find_program('at-spi2-registryd')
 logger.warn "Testing with #{AT_SPI_BUS_LAUNCHER_PATH} and #{AT_SPI_REGISTRY_PATH}"
 
 # TODO move this elsewhere
