@@ -29,10 +29,14 @@ unless ENV.include?('CUSTOM_BUS')
   ENV['CUSTOM_BUS'] = '1'
   # Using system() so we can print useful debug information after the run
   # (useful to debug problems with shutdown of started processes)
-  ret = system('dbus-run-session', '--', __FILE__, *ARGV)
+  pid = spawn('dbus-run-session', '--', __FILE__, *ARGV, pgroup: true)
+  pgid = Process.getpgid(pid)
+  Process.wait(pid)
+  ret = $?
+  Process.kill('-TERM', pgid)
   logger.info('dbus session ended')
-  system('ps aux')
-  ret ? exit : abort
+  system('ps fja')
+  ret.success? ? exit : abort
 end
 
 PORT = '4723'
