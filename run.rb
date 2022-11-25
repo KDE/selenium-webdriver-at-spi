@@ -73,7 +73,7 @@ rescue => e
   raise e
 end
 
-logger.info 'starting test'
+logger.info "starting test #{ARGV.fetch(0)}"
 ret = system(ARGV.fetch(0))
 logger.info 'tests done'
 
