@@ -73,8 +73,8 @@ rescue => e
   raise e
 end
 
-logger.info "starting test #{ARGV.fetch(0)}"
-ret = system(ARGV.fetch(0))
+logger.info "starting test #{ARGV}"
+ret = system(*ARGV)
 logger.info 'tests done'
 
 # NB: do not KILL the launcher, it only shutsdown the a11y dbus-daemon when terminated!
