@@ -373,21 +373,21 @@ def session_element_text(session_id, element_id):
 def session_element_enabled(session_id, element_id):
     session = sessions[session_id]
     element = session.elements[element_id]
-    return json.dumps({'value': element.getStates().contains(pyatspi.STATE_ENABLED)})
+    return json.dumps({'value': element.getState().contains(pyatspi.STATE_ENABLED)}), 200, {'content-type': 'application/json'}
 
 
 @app.route('/session/<session_id>/element/<element_id>/displayed', methods=['GET'])
 def session_element_displayed(session_id, element_id):
     session = sessions[session_id]
     element = session.elements[element_id]
-    return json.dumps({'value': element.getStates().contains(pyatspi.STATE_VISIBLE) and element.getStates().contains(pyatspi.STATE_SHOWING)})
+    return json.dumps({'value': element.getState().contains(pyatspi.STATE_VISIBLE) and element.getState().contains(pyatspi.STATE_SHOWING)}), 200, {'content-type': 'application/json'}
 
 
 @app.route('/session/<session_id>/element/<element_id>/selected', methods=['GET'])
 def session_element_selected(session_id, element_id):
     session = sessions[session_id]
     element = session.elements[element_id]
-    return json.dumps({'value': element.getStates().contains(pyatspi.STATE_SELECTED)})
+    return json.dumps({'value': element.getState().contains(pyatspi.STATE_SELECTED)}), 200, {'content-type': 'application/json'}
 
 
 @app.route('/session/<session_id>/element/<element_id>/attribute/<name>', methods=['GET'])
