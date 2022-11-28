@@ -171,6 +171,8 @@ class Session:
         if desired_app.endswith(".desktop"):
             appinfo = Gio.DesktopAppInfo.new(desired_app)
             appinfo.launch([], context)
+        elif desired_app.isnumeric():
+            on_launched(None, None, {'pid': int(desired_app)})
         else:
             appinfo = Gio.AppInfo.create_from_commandline(
                 desired_app, None, Gio.AppInfoCreateFlags.NONE)
