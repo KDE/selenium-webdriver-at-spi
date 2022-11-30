@@ -244,6 +244,17 @@ def session_source(session_id):
     return json.dumps({ 'value': etree.tostring(doc, pretty_print=False).decode("utf-8") }), 200, {'content-type': 'application/xml'}
 
 
+# NB: custom method to get the source without json wrapper
+@app.route('/session/<session_id>/sourceRaw', methods=['GET'])
+def session_source_raw(session_id):
+    session = sessions[session_id]
+    if not session:
+        return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    doc = _createNode2(session.browsing_context, None)
+    return etree.tostring(doc, pretty_print=True).decode("utf-8"), 200, {'content-type': 'application/xml'}
+
+
 def locator(session, strategy, selector, start):
     # pyatspi.findDescendant(start, lambda x: print(x))
 
