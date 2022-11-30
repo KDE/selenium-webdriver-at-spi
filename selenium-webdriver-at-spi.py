@@ -485,9 +485,7 @@ def session_element_value(session_id, element_id):
             if action.getName(i) == 'SetFocus':
                 action.doAction(i)
                 for ch in text:
-                    keyval = Gdk.unicode_to_keyval(ord(ch))
-                    pyatspi.Registry.generateKeyboardEvent(
-                        keyval, None, pyatspi.KEY_SYM)
+                    pyatspi.Registry.generateKeyboardEvent(char_to_keyval(ch), None, pyatspi.KEY_SYM)
                 break
         return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
@@ -545,14 +543,7 @@ def session_appium_device_press_keycode(session_id):
     # metastate = blob['metastate']
     # flags = blob['flags']
     for ch in keycode:
-        keyval = Gdk.unicode_to_keyval(ord(ch))
-        # I Don't know why this doesn't work, also doesn't work with \033 as input. :((
-        # https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-24/gdk/gdkkeyuni.c
-        if ch == "\uE00C":
-            keyval = 0xff1b  # escape
-        if ch == "\ue03d":
-            keyval = 0xffeb  # left meta
-        pyatspi.Registry.generateKeyboardEvent(keyval, None, pyatspi.KEY_SYM)
+        pyatspi.Registry.generateKeyboardEvent(char_to_keyval(ch), None, pyatspi.KEY_SYM)
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
@@ -572,3 +563,17 @@ def session_appium_screenshot(session_id):
     out, err = proc.communicate()
 
     return json.dumps({'value': base64.b64encode(out).decode('utf-8')}), 200, {'content-type': 'application/json'}
+
+
+def char_to_keyval(ch):
+    print("----------::::::")
+    keyval = Gdk.unicode_to_keyval(ord(ch))
+    # I Don't know why this doesn't work, also doesn't work with \033 as input. :((
+    # https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-24/gdk/gdkkeyuni.c
+    if ch == "\uE00C":
+        keyval = 0xff1b  # escape
+    elif ch == "\ue03d":
+        keyval = 0xffeb  # left meta
+    print(ord(ch))
+    print(hex(keyval))
+    return keyval
