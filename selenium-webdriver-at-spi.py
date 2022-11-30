@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # SPDX-FileCopyrightText: 2021-2022 Harald Sitter <sitter@kde.org>
 
+import base64
 from datetime import datetime, timedelta
 from os import access
 from platform import platform
@@ -538,3 +539,21 @@ def session_appium_device_press_keycode(session_id):
             keyval = 0xffeb  # left meta
         pyatspi.Registry.generateKeyboardEvent(keyval, None, pyatspi.KEY_SYM)
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
+
+
+@app.route('/session/<session_id>/screenshot', methods=['GET'])
+def session_appium_screenshot(session_id):
+    session = sessions[session_id]
+    if not session:
+        return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    # NB: these values incorrectly do not include the device pixel ratio, so they are off when used on a scaling display
+    position_x, position_y = session.browsing_context.getChildAtIndex(0).queryComponent().getPosition(pyatspi.XY_SCREEN)
+    size_width, size_height = session.browsing_context.getChildAtIndex(0).queryComponent().getSize()
+
+    args = ['scrot', '-a', '{},{},{},{}'.format(position_x, position_y, size_width, size_height), '-']
+    print(args)
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+    out, err = proc.communicate()
+
+    return json.dumps({'value': base64.b64encode(out).decode('utf-8')}), 200, {'content-type': 'application/json'}
