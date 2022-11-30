@@ -70,6 +70,7 @@ def _createNode2(accessible, parentElement):
     e.set("name", accessible.name)
     e.set("role", str(int(accessible.getRole())))
     e.set("description", accessible.description)
+    e.set("accessibility-id", accessible.accessibleId)
     path = pyatspi.getPath(accessible)
     path_strs = [str(x) for x in path] # path is a list of ints for the indexes within the parents
     e.set("path", ' '.join(path_strs))
