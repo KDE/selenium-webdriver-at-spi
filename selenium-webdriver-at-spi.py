@@ -241,7 +241,7 @@ def session_source(session_id):
         return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
 
     doc = _createNode2(session.browsing_context, None)
-    return json.dumps({'value': etree.tostring(doc, pretty_print=True).decode("utf-8")})
+    return json.dumps({ 'value': etree.tostring(doc, pretty_print=False).decode("utf-8") }), 200, {'content-type': 'application/xml'}
 
 
 def locator(session, strategy, selector, start):
