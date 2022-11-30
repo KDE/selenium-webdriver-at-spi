@@ -574,6 +574,10 @@ def char_to_keyval(ch):
         keyval = 0xff1b  # escape
     elif ch == "\ue03d":
         keyval = 0xffeb  # left meta
+    elif ch == "\ue006":
+        keyval = 0xff0d  # return
+    elif ch == "\ue007":
+        keyval = 0xff8d  # enter
     print(ord(ch))
     print(hex(keyval))
     return keyval
