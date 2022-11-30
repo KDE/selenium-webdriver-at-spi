@@ -183,7 +183,10 @@ class Session:
 
     def close(self) -> None:
         if self.launched:
-            os.kill(self.pid, signal.SIGKILL)
+            try:
+                os.kill(self.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
 
 
 @app.route('/session', methods=['GET', 'POST', 'DELETE'])
