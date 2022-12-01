@@ -566,12 +566,19 @@ def session_appium_screenshot(session_id):
     position_x, position_y = session.browsing_context.getChildAtIndex(0).queryComponent().getPosition(pyatspi.XY_SCREEN)
     size_width, size_height = session.browsing_context.getChildAtIndex(0).queryComponent().getSize()
 
-    args = ['scrot', '-a', '{},{},{},{}'.format(position_x, position_y, size_width, size_height), '-']
-    print(args)
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+    proc = subprocess.Popen(['selenium-webdriver-at-spi-screenshotter',
+                             str(position_x), str(position_y), str(size_width), str(size_height)],
+                            stdout=subprocess.PIPE)
     out, err = proc.communicate()
 
-    return json.dumps({'value': base64.b64encode(out).decode('utf-8')}), 200, {'content-type': 'application/json'}
+    if not out:
+        return json.dumps({'value': {'error': err}}), 404, {'content-type': 'application/json'}
+
+    output = open(out, 'rb').read()
+    os.unlink(out)
+    print("READING {}".format(out))
+
+    return json.dumps({'value': base64.b64encode(output).decode('utf-8')}), 200, {'content-type': 'application/json'}
 
 
 def char_to_keyval(ch):
