@@ -18,9 +18,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Disable legacy stuff to get rid of some deprecation warnings. Notably duplicated QProcess::finished overloads.
 add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0x050e00)
 
+find_package(Qt${QT_MAJOR_VERSION} ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Core DBus)
 find_package(KF5 5.99 REQUIRED COMPONENTS WindowSystem)
 
 add_subdirectory(appidlister)
+add_subdirectory(screenshotter)
 
 install(PROGRAMS run.rb
     RENAME selenium-webdriver-at-spi-run
