@@ -24,6 +24,7 @@ class ATSPIBus
     registry_pid = spawn(registry_path)
     block.yield
   ensure
+    # NB: do not KILL the launcher, it only shutsdown the a11y dbus-daemon when terminated!
     Process.kill('TERM', registry_pid) if launcher_pid
     Process.kill('TERM', launcher_pid) if registry_pid
   end
@@ -43,6 +44,30 @@ class ATSPIBus
       return path if File.exist?(path)
     end
     raise "Could not resolve absolute path for #{name}; searched in #{@atspi_paths.join(', ')}"
+  end
+end
+
+class KWin
+  def self.with(&block)
+    return block.yield unless ENV['TEST_WITH_KWIN_WAYLAND']
+
+    ENV['QT_QPA_PLATFORM'] = 'wayland'
+    kwin_pid = spawn('kwin_wayland', '--lock', '--no-lockscreen', '--no-kactivities', '--no-global-shortcuts')
+    ENV['KWIN_PID'] = kwin_pid.to_s
+    block.yield
+  ensure
+    Process.kill('TERM', kwin_pid) if kwin_pid
+  end
+end
+
+class Driver
+  def self.with(datadir, &block)
+    driver_pid = spawn({ 'FLASK_ENV' => 'production', 'FLASK_APP' => 'selenium-webdriver-at-spi.py' },
+                       'flask', 'run', '--port', PORT, '--no-reload',
+                       chdir: datadir)
+    block.yield
+  ensure
+    Process.kill('TERM', driver_pid) if driver_pid
   end
 end
 
@@ -76,30 +101,27 @@ end
 
 logger.info 'Starting supporting services'
 ATSPIBus.new(logger: logger).with do
-  driver_pid = spawn({ 'FLASK_ENV' => 'production', 'FLASK_APP' => 'selenium-webdriver-at-spi.py' },
-                     'flask', 'run', '--port', PORT, '--no-reload',
-                     chdir: datadir)
+  KWin.with do
+    Driver.with(datadir) do
+      i = 0
+      begin
+        require 'net/http'
+        Net::HTTP.get(URI("http://localhost:#{PORT}/status"))
+      rescue => e
+        i += 1
+        if i < 30
+          logger.info 'not up yet'
+          sleep 0.5
+          retry
+        end
+        raise e
+      end
 
-  i = 0
-  begin
-    require 'net/http'
-    Net::HTTP.get(URI("http://localhost:#{PORT}/status"))
-  rescue => e
-    i += 1
-    if i < 30
-      logger.info 'not up yet'
-      sleep 0.5
-      retry
+      logger.info "starting test #{ARGV}"
+      ret = system(*ARGV)
+      logger.info 'tests done'
     end
-    raise e
   end
-
-  logger.info "starting test #{ARGV}"
-  ret = system(*ARGV)
-  logger.info 'tests done'
-
-  # NB: do not KILL the launcher, it only shutsdown the a11y dbus-daemon when terminated!
-  Process.kill('TERM', driver_pid)
 end
 
 logger.info "run.rb exiting #{ret}"
