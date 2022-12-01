@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: CC0-1.0
+# SPDX-FileCopyrightText: 2022 Harald Sitter <sitter@kde.org>
 [Desktop Entry]
 Name=Screenshot Authorizexport
 NoDisplay=true
