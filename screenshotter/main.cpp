@@ -30,14 +30,12 @@ std::optional<QString> kwinService()
     if (namesReply.isValid()) {
         const auto names = namesReply.value();
         for (const auto &name : names) {
-            qWarning() << name;
             QDBusMessage getPid = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
                                                                     QStringLiteral("/org/freedesktop/DBus"),
                                                                     QStringLiteral("org.freedesktop.DBus"),
                                                                     QStringLiteral("GetConnectionUnixProcessID"));
             getPid << name;
             QDBusReply<quint32> pid = bus.call(getPid);
-            qWarning() << pid << kwinPid;
             if (pid.isValid() && QString::number(pid.value()) == kwinPid) {
                 return name;
             }
