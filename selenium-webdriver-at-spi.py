@@ -21,8 +21,10 @@ from xml.dom import minidom
 import xml.etree.ElementTree as ET
 from lxml import etree
 
+import gi
 from gi.repository import Gio
 from gi.repository import GObject
+gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk
 
 from app_roles import ROLE_NAMES
