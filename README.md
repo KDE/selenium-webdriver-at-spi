@@ -1,4 +1,9 @@
-# GUI Testing Made Easy!
+<!--
+    SPDX-License-Identifier: CC0-1.0
+    SPDX-FileCopyrightText: 2022 Harald Sitter <sitter@kde.org>
+-->
+
+# GUI Testing Made Easy
 
 selenium-webdriver-at-spi is a [WebDriver](https://www.w3.org/TR/webdriver/) for [Appium](https://appium.io) (based on [Selenium](https://www.selenium.dev/)) using the Linux accessibility API [AT-SPI2](https://www.freedesktop.org/wiki/Accessibility/AT-SPI2/).
 
