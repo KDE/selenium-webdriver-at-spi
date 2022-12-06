@@ -3,27 +3,19 @@
 
 import base64
 from datetime import datetime, timedelta
-from os import access
-from platform import platform
-from flask import Flask, request, Response
+from flask import Flask, request
 import uuid
 import json
-import time
 import sys
-import pprint
 import os
-import shlex
 import signal
 import subprocess
 
 import pyatspi
-from xml.dom import minidom
-import xml.etree.ElementTree as ET
 from lxml import etree
 
 import gi
 from gi.repository import Gio
-from gi.repository import GObject
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk
 
