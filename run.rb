@@ -53,7 +53,10 @@ class KWin
 
     ENV['QT_QPA_PLATFORM'] = 'wayland'
     ENV['KWIN_SCREENSHOT_NO_PERMISSION_CHECKS'] = '1'
-    kwin_pid = spawn('kwin_wayland', '--lock', '--no-lockscreen', '--no-kactivities', '--no-global-shortcuts')
+    extra_args = []
+    extra_args << '--virtual' if ENV['LIBGL_ALWAYS_SOFTWARE']
+    kwin_pid = spawn('kwin_wayland', '--lock', '--no-lockscreen', '--no-kactivities', '--no-global-shortcuts',
+                     *extra_args)
     ENV['KWIN_PID'] = kwin_pid.to_s
     block.yield
   ensure
