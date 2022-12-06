@@ -53,11 +53,7 @@ class KWin
 
     ENV['QT_QPA_PLATFORM'] = 'wayland'
     ENV['KWIN_SCREENSHOT_NO_PERMISSION_CHECKS'] = '1'
-    extra_args = []
-    # render to a virtual framebuffer in CI scenarios to ensure screenshot effect works
-    extra_args << '--virtual' if ENV['CI_JOB_NAME']
-    kwin_pid = spawn('kwin_wayland', '--lock', '--no-lockscreen', '--no-kactivities', '--no-global-shortcuts',
-                     *extra_args)
+    kwin_pid = spawn('kwin_wayland', '--lock', '--no-lockscreen', '--no-kactivities', '--no-global-shortcuts')
     ENV['KWIN_PID'] = kwin_pid.to_s
     block.yield
   ensure
