@@ -53,14 +53,18 @@ int main(int argc, char **argv)
 
     // Unfortunately since the geometries are not including the DPR we can only look at one screen
     // and hope that they are all the same :(
-    const auto dpr = app.primaryScreen()->devicePixelRatio();
-
-    auto args = app.arguments().mid(1);
-    const auto positionX = int(args.takeFirst().toInt() * dpr);
-    const auto positionY = int(args.takeFirst().toInt() * dpr);
-    const auto width = int(args.takeFirst().toInt() * dpr);
-    const auto height = int(args.takeFirst().toInt() * dpr);
-    Q_ASSERT(args.isEmpty());
+    //
+    // Also since the position is entirely wrong on wayland (always 0,0) we currently ignore all of this
+    // and instead make full screen shots.
+    //
+    // const auto dpr = app.primaryScreen()->devicePixelRatio();
+    //
+    // auto args = app.arguments().mid(1);
+    // const auto positionX = int(args.takeFirst().toInt() * dpr);
+    // const auto positionY = int(args.takeFirst().toInt() * dpr);
+    // const auto width = int(args.takeFirst().toInt() * dpr);
+    // const auto height = int(args.takeFirst().toInt() * dpr);
+    // Q_ASSERT(args.isEmpty());
 
     const auto service = kwinService();
     if (!service.has_value()) {
@@ -72,8 +76,7 @@ int main(int argc, char **argv)
     QDBusMessage message = QDBusMessage::createMethodCall(service.value(),
                                                           QStringLiteral("/Screenshot"),
                                                           QStringLiteral("org.kde.kwin.Screenshot"),
-                                                          QStringLiteral("screenshotArea"));
-    message << positionX << positionY << width << height;
+                                                          QStringLiteral("screenshotFullscreen"));
 
     QDBusReply<QString> reply = bus.call(message);
     if (!reply.isValid()) {
