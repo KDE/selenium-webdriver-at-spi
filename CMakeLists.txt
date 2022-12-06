@@ -11,6 +11,7 @@ include(FeatureSummary)
 include(KDEInstallDirs)
 include(KDECMakeSettings)
 include(KDECompilerSettings)
+include(CMakePackageConfigHelpers)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -28,5 +29,27 @@ install(PROGRAMS run.rb
     RENAME selenium-webdriver-at-spi-run
     DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES selenium-webdriver-at-spi.py app_roles.py requirements.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/selenium-webdriver-at-spi)
+
+set(CMAKECONFIG_INSTALL_DIR "${KDE_INSTALL_CMAKEPACKAGEDIR}/SeleniumWebDriverATSPI")
+
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/SeleniumWebDriverATSPIConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/SeleniumWebDriverATSPIConfig.cmake
+    INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+)
+
+install(
+    FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/SeleniumWebDriverATSPIConfig.cmake
+        cmake/Findat-spi2-registryd.cmake
+        cmake/Findat-spi-bus-launcher.cmake
+        cmake/FindPython3.cmake
+        cmake/FindPythonModule.cmake
+        cmake/FindPythonModule.cmake.in
+        cmake/FindRuby.cmake
+        cmake/ProgramFinder.cmake
+    DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+    COMPONENT Devel
+)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
