@@ -49,7 +49,7 @@ end
 
 class KWin
   def self.with(&block)
-    return block.yield unless ENV['TEST_WITH_KWIN_WAYLAND']
+    return block.yield unless ENV['TEST_WITH_KWIN_WAYLAND'] || ENV['KDECI_BUILD']
 
     ENV['QT_QPA_PLATFORM'] = 'wayland'
     ENV['KWIN_SCREENSHOT_NO_PERMISSION_CHECKS'] = '1'
