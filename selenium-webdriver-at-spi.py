@@ -335,7 +335,7 @@ def session_element(session_id=None):
         return json.dumps({'value': {'error': 'invalid argument'}}), 404, {'content-type': 'application/json'}
 
     start = session.browsing_context
-    if not start:  # browsing context (no longer) valid
+    if not start: # browsing context (no longer) valid
         return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
 
     results = locator(session, strategy, selector, start)
