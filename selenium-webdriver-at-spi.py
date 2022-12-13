@@ -466,6 +466,9 @@ def session_element_attribute(session_id, element_id, name):
 
     print(request.data)
 
+    if name == "accessibility-id":
+        return json.dumps({'value': element.accessibleId}), 200, {'content-type': 'application/json'}
+
     print(pyatspi.STATE_VALUE_TO_NAME)
     result = None
     for value, string in pyatspi.STATE_VALUE_TO_NAME.items():
