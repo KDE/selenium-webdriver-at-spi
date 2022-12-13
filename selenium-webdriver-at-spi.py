@@ -406,7 +406,7 @@ def session_element_displayed(session_id, element_id):
 def session_element_selected(session_id, element_id):
     session = sessions[session_id]
     element = session.elements[element_id]
-    return json.dumps({'value': element.getState().contains(pyatspi.STATE_SELECTED)}), 200, {'content-type': 'application/json'}
+    return json.dumps({'value': (element.getState().contains(pyatspi.STATE_SELECTED) or element.getState().contains(pyatspi.STATE_FOCUSED))}), 200, {'content-type': 'application/json'}
 
 
 @app.route('/session/<session_id>/element/<element_id>/attribute/<name>', methods=['GET'])
