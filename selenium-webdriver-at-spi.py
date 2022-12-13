@@ -264,7 +264,7 @@ def locator(session, strategy, selector, start):
 
     end_time = datetime.now() + \
         timedelta(milliseconds=session.timeouts['implicit'])
-    result = None
+    results = []
 
     while datetime.now() < end_time:
         if strategy == 'xpath':
@@ -284,8 +284,7 @@ def locator(session, strategy, selector, start):
                 print(c.get('name'))
                 print(pyatspi.getPath(item))
                 print(item)
-                result = item
-                break
+                results.append(item)
             print("-- xml")
         else:
             # TODO can I switch this in python +++ raise on unmapped strategy
@@ -303,17 +302,14 @@ def locator(session, strategy, selector, start):
                 def pred(x): return x.description == selector and (x.getState().contains(
                     pyatspi.STATE_VISIBLE) or x.getState().contains(pyatspi.STATE_SENSITIVE))
             # there are also id and accessibleId but they seem not ever set. Not sure what to make of that :shrug:
-            result = pyatspi.findDescendant(start, pred)
-            print(result)
-        if result:
+            accessible = pyatspi.findDescendant(start, pred)
+            print(accessible)
+            if accessible:
+                results.append(accessible)
+        if len(results) > 0:
             break
 
-    if not result:
-        return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
-
-    unique_id = result.path.replace('/', '-')
-    session.elements[unique_id] = result
-    return json.dumps({'value': {'element-6066-11e4-a52e-4f735466cecf': unique_id}}), 200, {'content-type': 'application/json'}
+    return results
 
 
 @app.route('/session/<session_id>/element', methods=['GET', 'POST'])
@@ -337,7 +333,51 @@ def session_element(session_id=None):
     if not start:  # browsing context (no longer) valid
         return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
 
-    return locator(session, strategy, selector, start)
+    results = locator(session, strategy, selector, start)
+
+    if not results:
+        return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
+
+    result = results[0]
+    unique_id = result.path.replace('/', '-')
+    session.elements[unique_id] = result
+    return json.dumps({'value': {'element-6066-11e4-a52e-4f735466cecf': unique_id}}), 200, {'content-type': 'application/json'}
+
+
+@app.route('/session/<session_id>/elements', methods=['GET', 'POST'])
+def session_element2(session_id=None):
+    # https://www.w3.org/TR/webdriver1/#dfn-find-elements
+
+    # TODO scope elements to session somehow when the session gets closed we can throw away the references
+    print(request.url)
+    print(session_id)
+    print(request.args)
+    print(request.data)
+    session = sessions[session_id]
+    blob = json.loads(request.data)
+
+    strategy = blob['using']
+    selector = blob['value']
+    if not strategy or not selector:
+        return json.dumps({'value': {'error': 'invalid argument'}}), 404, {'content-type': 'application/json'}
+
+    start = session.browsing_context
+    if not start:  # browsing context (no longer) valid
+        return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    results = locator(session, strategy, selector, start)
+
+    if not results:
+        return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
+
+    serializations = []
+    for result in results:
+        unique_id = result.path.replace('/', '-')
+        print(unique_id)
+        session.elements[unique_id] = result
+        serializations.append({'element-6066-11e4-a52e-4f735466cecf': unique_id})
+
+    return json.dumps({'value': serializations}), 200, {'content-type': 'application/json'}
 
 
 @app.route('/session/<session_id>/element/<element_id>/click', methods=['GET', 'POST'])
