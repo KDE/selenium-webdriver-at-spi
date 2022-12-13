@@ -31,8 +31,13 @@ int main(int argc, char **argv)
     const auto count = model.rowCount();
     for (auto i = 0; i < count; ++i) {
         const auto index = model.index(i, 0);
-        pidsToAppIds.insert(model.data(index, TaskManager::AbstractTasksModel::AppPid).toString(),
-                            model.data(index, TaskManager::AbstractTasksModel::AppId));
+        auto appId = model.data(index, TaskManager::AbstractTasksModel::AppId).toString();
+        // On x11 the id is without suffix on wayland it is with, reconcile the two by always appending .desktop
+        static const QString suffix = QStringLiteral(".desktop");
+        if (!appId.endsWith(suffix)) {
+            appId.append(suffix);
+        }
+        pidsToAppIds.insert(model.data(index, TaskManager::AbstractTasksModel::AppPid).toString(), appId);
     }
     const QJsonDocument doc(QJsonObject::fromVariantHash(pidsToAppIds));
     printf("%s\n", doc.toJson().constData());
