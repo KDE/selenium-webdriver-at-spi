@@ -70,6 +70,11 @@ def _createNode2(accessible, parentElement):
     path_strs = [str(x) for x in path] # path is a list of ints for the indexes within the parents
     e.set("path", ' '.join(path_strs))
 
+    states = []
+    for state in accessible.getState().getStates():
+        states.append(pyatspi.stateToString(state))
+    e.set("states", ', '.join(states))
+
     for i in range(0, accessible.childCount):
         _createNode2(accessible.getChildAtIndex(i), e)
 
