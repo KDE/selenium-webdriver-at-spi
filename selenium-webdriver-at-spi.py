@@ -579,13 +579,23 @@ def char_to_keyval(ch):
     # I Don't know why this doesn't work, also doesn't work with \033 as input. :((
     # https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-24/gdk/gdkkeyuni.c
     if ch == "\uE00C":
-        keyval = 0xff1b  # escape
+        keyval = 0xff1b # escape
     elif ch == "\ue03d":
-        keyval = 0xffeb  # left meta
+        keyval = 0xffeb # left meta
     elif ch == "\ue006":
-        keyval = 0xff0d  # return
+        keyval = 0xff0d # return
     elif ch == "\ue007":
-        keyval = 0xff8d  # enter
+        keyval = 0xff8d # enter
+    elif ch == "\ue012":
+        keyval = 0xff51 # left
+    elif ch == "\ue014":
+        keyval = 0xff53 # right
+    elif ch == "\ue013":
+        keyval = 0xff52 # up
+    elif ch == "\ue015":
+        keyval = 0xff54 # down
+    elif ch == "\ue004":
+        keyval = 0xff09 # tab
     print(ord(ch))
     print(hex(keyval))
     return keyval
