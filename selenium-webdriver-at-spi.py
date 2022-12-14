@@ -215,7 +215,7 @@ def session():
         print(request)
     elif request.method == 'DELETE':
         # TODO spec review
-        return json.dumps({'value': None})
+        return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
 @app.route('/session/<session_id>', methods=['DELETE'])
@@ -227,7 +227,7 @@ def session_delete(session_id):
             return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
 
         session.close()
-        return json.dumps({'value': None})
+        return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
 @app.route('/session/<session_id>/timeouts/implicit_wait', methods=['POST'])
