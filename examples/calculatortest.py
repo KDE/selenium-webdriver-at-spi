@@ -73,12 +73,16 @@ class SimpleCalculatorTests(unittest.TestCase):
         self.assertResult(self.getresults(),"8")
 
     def test_division(self):
-        self.driver.find_element(by=AppiumBy.NAME, value="8").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="8").click()
+        # Using find element by name twice risks the driver finding the
+        # result display text rather than finding the button. To avoid
+        # that, execute the call once and store that as a local value.
+        button8 = self.driver.find_element(by=AppiumBy.NAME, value="8")
+        button8.click()
+        button8.click()
         self.driver.find_element(by=AppiumBy.NAME, value="÷").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="1").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="1").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="=").click()
+        button1 = self.driver.find_element(by=AppiumBy.NAME, value="1")
+        button1.click()
+        button1.click()
         self.assertResult(self.getresults(), "8")
 
     def test_multiplication(self):
