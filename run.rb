@@ -124,7 +124,9 @@ ATSPIBus.new(logger: logger).with do
       end
 
       logger.info "starting test #{ARGV}"
-      ret = system(*ARGV)
+      IO.popen(ARGV, 'r') do |pipe|
+        pipe.readlines()
+      end
       logger.info 'tests done'
     end
   end
