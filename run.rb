@@ -36,7 +36,8 @@ class ATSPIBus
       '/usr/lib/at-spi2-core/', # debians
       '/usr/libexec/', # newer debians
       '/usr/lib/at-spi2/', # suses
-      '/usr/libexec/at-spi2/' # newer suses
+      '/usr/libexec/at-spi2/', # newer suses
+      '/usr/lib/' # arch
     ]
 
     @atspi_paths.each do |x|
