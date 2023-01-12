@@ -7,3 +7,5 @@ Dependencies:
     'frameworks/extra-cmake-modules': '@latest'
     'plasma/plasma-workspace': '@same'
 
+Options:
+  require-passing-tests-on: [ 'Linux' ]
