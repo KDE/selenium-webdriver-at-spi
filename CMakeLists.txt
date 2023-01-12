@@ -25,6 +25,7 @@ find_package(LibTaskManager REQUIRED)
 
 add_subdirectory(appidlister)
 add_subdirectory(screenshotter)
+add_subdirectory(autotests)
 
 install(PROGRAMS run.rb
     RENAME selenium-webdriver-at-spi-run
