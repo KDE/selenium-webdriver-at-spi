@@ -106,6 +106,7 @@ if File.exist?("#{datadir}/requirements.txt")
 end
 
 logger.info 'Starting supporting services'
+ret = false
 ATSPIBus.new(logger: logger).with do
   KWin.with do
     Driver.with(datadir) do
@@ -125,6 +126,7 @@ ATSPIBus.new(logger: logger).with do
 
       logger.info "starting test #{ARGV}"
       IO.popen(ARGV, 'r', &:readlines)
+      ret = $?.success?
       logger.info 'tests done'
     end
   end
