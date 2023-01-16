@@ -151,23 +151,28 @@ class Session:
             print("launched " + str(self.pid))
 
             while datetime.now() < end_time:
+                print('--- looking for process pid: {} ---'.format(self.pid))
                 for desktop_index in range(pyatspi.Registry.getDesktopCount()):
                     desktop = pyatspi.Registry.getDesktop(desktop_index)
                     for app in desktop:
-                        print('=======')
-                        print(app.name)
-                        print(app.description)
-                        print(app.getApplication())
-                        print(app.getAttributes())
-                        print(app.toolkitName)
-                        print(app.path)
-                        print(app.role)
-                        print(app.props)
-                        print(app.get_process_id())
-                        print(app.id)
-                        if app.get_process_id() == self.pid:
-                            self.browsing_context = app
-                            break
+                        try:
+                            print('=======')
+                            print(app.name)
+                            print(app.description)
+                            print(app.getApplication())
+                            print(app.getAttributes())
+                            print(app.toolkitName)
+                            print(app.path)
+                            print(app.role)
+                            print(app.props)
+                            print(app.get_process_id())
+                            print(app.id)
+                            if app.get_process_id() == self.pid:
+                                self.browsing_context = app
+                                break
+                        except gi.repository.GLib.GError:
+                            print('stumbled over a broken process. ignoring...')
+                            continue
                     if self.browsing_context:
                         break
                 # TODO raise if no context?
