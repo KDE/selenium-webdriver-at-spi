@@ -47,7 +47,6 @@ install(
         cmake/Findat-spi-bus-launcher.cmake
         cmake/FindPython3.cmake
         cmake/FindPythonModule.cmake
-        cmake/FindPythonModule.cmake.in
         cmake/FindRuby.cmake
         cmake/ProgramFinder.cmake
     DESTINATION ${CMAKECONFIG_INSTALL_DIR}
