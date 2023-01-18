@@ -526,9 +526,9 @@ def session_element_value(session_id, element_id):
     print(element.queryText().caretOffset)
 
     try:
+        offset = element.queryText().caretOffset
         textElement = element.queryEditableText()
-        # textElement.setCaretOffset(textElement.characterCount)
-        textElement.insertText(-1, text, len(text))
+        textElement.insertText(offset, text, len(text))
         return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
     except NotImplementedError:
         print(element)
