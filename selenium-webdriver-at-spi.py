@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# SPDX-FileCopyrightText: 2021-2022 Harald Sitter <sitter@kde.org>
+# SPDX-FileCopyrightText: 2021-2023 Harald Sitter <sitter@kde.org>
 
 import base64
 from datetime import datetime, timedelta
@@ -519,20 +519,19 @@ def session_element_value(session_id, element_id):
 
     print(blob)
     print(element)
-    print(element.queryText())
-    print(element.queryText().getText(0, -1))
-    print(element.queryText().getDefaultAttributes())
-    print(element.queryText().characterCount)
-    print(element.queryText().caretOffset)
 
     try:
+        print(element.queryText())
+        print(element.queryText().getText(0, -1))
+        print(element.queryText().getDefaultAttributes())
+        print(element.queryText().characterCount)
+        print(element.queryText().caretOffset)
         offset = element.queryText().caretOffset
         textElement = element.queryEditableText()
         textElement.insertText(offset, text, len(text))
         return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
     except NotImplementedError:
-        print(element)
-        print(str(element))
+        print("element is not text type, falling back to synthesizing keyboard events")
         action = element.queryAction()
         print(dir(action))
         for i in range(0, action.nActions):
