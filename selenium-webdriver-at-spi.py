@@ -280,9 +280,7 @@ def locator(session, strategy, selector, start):
         if strategy == 'xpath':
             print("-- xml")
             doc = _createNode2(start, None)
-            print(etree.tostring(doc, pretty_print=True))
             for c in doc.xpath(selector):
-                print(c)
                 path = [int(x) for x in c.get('path').split()]
                 # path is relative to the app root, not our start item!
                 item = session.browsing_context
@@ -290,10 +288,6 @@ def locator(session, strategy, selector, start):
                     item = item[i]
                 if c.get('name') != item.name or c.get('description') != item.description:
                     return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
-                print(c)
-                print(c.get('name'))
-                print(pyatspi.getPath(item))
-                print(item)
                 results.append(item)
             print("-- xml")
         else:
