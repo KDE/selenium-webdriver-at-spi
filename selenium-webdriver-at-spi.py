@@ -47,7 +47,7 @@ def status():
     return json.dumps(body), 200, {'content-type': 'application/json'}
 
 
-def _createNode2(accessible, parentElement):
+def _createNode2(accessible, parentElement, indexInParents = []):
     if not accessible:
         return
     # A bit of aggressive filtering to not introspect chromium and firefox and the likes when using the desktop root.
@@ -66,8 +66,10 @@ def _createNode2(accessible, parentElement):
     e.set("description", accessible.description)
     if accessible.accessibleId != None:
         e.set("accessibility-id", accessible.accessibleId)
-    path = pyatspi.getPath(accessible)
-    path_strs = [str(x) for x in path] # path is a list of ints for the indexes within the parents
+    # NB: pyatspi.getPath is bugged when the QObject has no QObject parent. Instead manually keep track of indexes.
+    # while generating the xml.
+    # path = pyatspi.getPath(accessible)
+    path_strs = [str(x) for x in indexInParents] # path is a list of ints for the indexes within the parents
     e.set("path", ' '.join(path_strs))
 
     states = []
@@ -76,7 +78,9 @@ def _createNode2(accessible, parentElement):
     e.set("states", ', '.join(states))
 
     for i in range(0, accessible.childCount):
-        _createNode2(accessible.getChildAtIndex(i), e)
+        newIndex = indexInParents.copy()
+        newIndex.append(i)
+        _createNode2(accessible.getChildAtIndex(i), e, newIndex)
 
     if parentElement != None:
         parentElement.append(e)
