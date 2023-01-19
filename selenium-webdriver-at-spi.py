@@ -287,7 +287,7 @@ def locator(session, strategy, selector, start):
                 for i in path:
                     item = item[i]
                 if c.get('name') != item.name or c.get('description') != item.description:
-                    return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
+                    return []
                 results.append(item)
             print("-- xml")
         else:
