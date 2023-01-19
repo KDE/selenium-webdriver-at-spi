@@ -534,12 +534,17 @@ def session_element_value(session_id, element_id):
         print("element is not text type, falling back to synthesizing keyboard events")
         action = element.queryAction()
         print(dir(action))
+        processed = False
         for i in range(0, action.nActions):
+            print(action.getName(i))
             if action.getName(i) == 'SetFocus':
+                processed = True
                 action.doAction(i)
                 for ch in text:
                     pyatspi.Registry.generateKeyboardEvent(char_to_keyval(ch), None, pyatspi.KEY_SYM)
                 break
+        if not processed:
+            raise RuntimeError("element's actions list didn't contain SetFocus. The element may be malformed")
         return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
