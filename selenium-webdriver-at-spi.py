@@ -390,12 +390,6 @@ def session_element2(session_id=None):
 
 @app.route('/session/<session_id>/element/<element_id>/click', methods=['GET', 'POST'])
 def session_element_click(session_id, element_id):
-    # TODO: spec review
-    print(request.url)
-    print(session_id)
-    print(request.args)
-    print(request.data)
-
     session = sessions[session_id]
     if not session:
         return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
@@ -404,24 +398,23 @@ def session_element_click(session_id, element_id):
     if not element:
         return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
 
-    # TODO why is this using the blob rather than the url arg what even is the blob for here
-    element = session.elements[element_id]
-    print(dir(element))
     action = element.queryAction()
-    print(dir(action))
+    availableActions = {}
     for i in range(0, action.nActions):
-        print(element.getRoleName())
-        print(action.getName(i))
-        action_name = action.getName(i)
-        if action_name == 'Press':
-            action.doAction(i)
-            break
-        if action_name == 'Toggle':
-            action.doAction(i)
-            break
-        if action_name == 'SetFocus':
-            action.doAction(i)
-            # intentionally doesn't break. on it's own that's not sufficient
+        availableActions[action.getName(i)] = i
+
+    keys = availableActions.keys()
+    if 'SetFocus' in keys: # this is used in addition to actual actions so focus is where it would be expected after a click
+        print("actioning focus")
+        action.doAction(availableActions['SetFocus'])
+
+    if 'Press' in keys:
+        print("actioning press")
+        action.doAction(availableActions['Press'])
+    elif 'Toggle' in keys:
+        print("actioning toggle")
+        action.doAction(availableActions['Toggle'])
+
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
