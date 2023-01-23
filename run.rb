@@ -6,7 +6,11 @@
 
 require 'logger'
 
-AT_BUS_EXISTS = File.exist?("/run/user/#{Process.uid}/at-spi/bus_0")
+def at_bus_exists?
+  IO.popen(['dbus-send', '--print-reply', '--dest=org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus.ListNames'], 'r') do |io|
+    io.read.include?('"org.a11y.Bus"')
+  end
+end
 
 class ATSPIBus
   def initialize(logger:)
@@ -14,7 +18,7 @@ class ATSPIBus
   end
 
   def with(&block)
-    return block.yield if AT_BUS_EXISTS
+    return block.yield if at_bus_exists?
 
     launcher_path = find_program('at-spi-bus-launcher')
     registry_path = find_program('at-spi2-registryd')
@@ -80,19 +84,23 @@ end
 $stdout.sync = true # force immediate flushing without internal caching
 logger = Logger.new($stdout)
 
-unless ENV.include?('CUSTOM_BUS') || AT_BUS_EXISTS
-  logger.info('starting dbus session')
-  ENV['CUSTOM_BUS'] = '1'
-  # Using system() so we can print useful debug information after the run
-  # (useful to debug problems with shutdown of started processes)
-  pid = spawn('dbus-run-session', '--', __FILE__, *ARGV, pgroup: true)
-  pgid = Process.getpgid(pid)
-  Process.wait(pid)
-  ret = $?
-  Process.kill('-TERM', pgid)
-  logger.info('dbus session ended')
-  system('ps fja')
-  ret.success? ? exit : abort
+unless ENV.include?('CUSTOM_BUS') # not inside a nested bus (yet)
+  if ENV.fetch('USE_CUSTOM_BUS', '1').to_i > 0 || !at_bus_exists? # should we nest at all?
+    logger.info('starting dbus session')
+    ENV['CUSTOM_BUS'] = '1'
+    # Using system() so we can print useful debug information after the run
+    # (useful to debug problems with shutdown of started processes)
+    pid = spawn('dbus-run-session', '--', __FILE__, *ARGV, pgroup: true)
+    pgid = Process.getpgid(pid)
+    Process.wait(pid)
+    ret = $?
+    Process.kill('-TERM', pgid)
+    logger.info('dbus session ended')
+    system('ps fja')
+    ret.success? ? exit : abort
+  else
+    logger.info('using existing dbus session')
+  end
 end
 
 PORT = '4723'
