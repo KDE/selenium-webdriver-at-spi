@@ -85,7 +85,7 @@ $stdout.sync = true # force immediate flushing without internal caching
 logger = Logger.new($stdout)
 
 unless ENV.include?('CUSTOM_BUS') # not inside a nested bus (yet)
-  if ENV.fetch('USE_CUSTOM_BUS', '1').to_i > 0 || !at_bus_exists? # should we nest at all?
+  if ENV.fetch('USE_CUSTOM_BUS', '0').to_i > 0 || !at_bus_exists? # should we nest at all?
     logger.info('starting dbus session')
     ENV['CUSTOM_BUS'] = '1'
     # Using system() so we can print useful debug information after the run
