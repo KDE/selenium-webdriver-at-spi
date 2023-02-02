@@ -424,7 +424,7 @@ def session_element_text(session_id, element_id):
     element = session.elements[element_id]
     try:
         textElement = element.queryText()
-        return json.dumps({'value': textElement.getText(0, textElement.caretOffset)})
+        return json.dumps({'value': textElement.getText(0, -1)})
     except NotImplementedError:
         return json.dumps({'value': element.name})
 
