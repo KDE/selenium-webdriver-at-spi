@@ -5,7 +5,8 @@ Dependencies:
 - 'on': ['@all']
   'require':
     'frameworks/extra-cmake-modules': '@latest'
-    'plasma/plasma-workspace': '@same'
+    'frameworks/kwindowsystem': '@latest'
+    'frameworks/kwayland': '@latest'
 
 Options:
   require-passing-tests-on: [ 'Linux' ]
