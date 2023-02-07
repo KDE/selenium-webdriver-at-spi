@@ -61,7 +61,7 @@ class KWin
     ENV['KWIN_WAYLAND_NO_PERMISSION_CHECKS'] = '1'
     extra_args = []
     extra_args << '--virtual' if ENV['LIBGL_ALWAYS_SOFTWARE']
-    kwin_pid = spawn('kwin_wayland', '--no-lockscreen', '--no-kactivities', '--no-global-shortcuts',
+    kwin_pid = spawn('kwin_wayland', '--no-lockscreen', '--no-global-shortcuts',
                      *extra_args)
     ENV['KWIN_PID'] = kwin_pid.to_s
     block.yield
