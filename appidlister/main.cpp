@@ -49,7 +49,9 @@ public:
         for (auto i = 0; i < syncTimes; i++) {
             QCoreApplication::processEvents();
             m_connection->roundtrip();
+            QCoreApplication::processEvents();
         }
+        QCoreApplication::processEvents();
         Q_ASSERT(m_windowManagement);
         const auto windows = m_windowManagement->windows();
         for (const auto &window : windows) {
