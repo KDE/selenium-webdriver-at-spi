@@ -3,6 +3,7 @@
 
 import base64
 from datetime import datetime, timedelta
+import time
 from flask import Flask, request
 import uuid
 import json
@@ -612,8 +613,10 @@ def session_appium_screenshot(session_id):
 def generate_keyboard_event(ch):
     if 'KWIN_PID' in os.environ: # using a nested kwin. need to synthesize keys into wayland (not supported in atspi right now)
         subprocess.run(["selenium-webdriver-at-spi-inputsynth", str(keyval_to_keycode(char_to_keyval(ch)))])
+        time.sleep(0.1)
     else:
         pyatspi.Registry.generateKeyboardEvent(char_to_keyval(ch), None, pyatspi.KEY_SYM)
+        time.sleep(0.1)
 
 
 def keyval_to_keycode(keyval):
