@@ -520,7 +520,7 @@ def session_element_value(session_id, element_id):
                 processed = True
                 action.doAction(i)
                 for ch in text:
-                    pyatspi.Registry.generateKeyboardEvent(char_to_keyval(ch), None, pyatspi.KEY_SYM)
+                    generate_keyboard_event(ch)
                 break
         if not processed:
             raise RuntimeError("element's actions list didn't contain SetFocus. The element may be malformed")
@@ -580,7 +580,7 @@ def session_appium_device_press_keycode(session_id):
     # metastate = blob['metastate']
     # flags = blob['flags']
     for ch in keycode:
-        pyatspi.Registry.generateKeyboardEvent(char_to_keyval(ch), None, pyatspi.KEY_SYM)
+        generate_keyboard_event(ch)
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
@@ -607,6 +607,21 @@ def session_appium_screenshot(session_id):
     print("READING {}".format(out))
 
     return json.dumps({'value': base64.b64encode(output).decode('utf-8')}), 200, {'content-type': 'application/json'}
+
+
+def generate_keyboard_event(ch):
+    if 'KWIN_PID' in os.environ: # using a nested kwin. need to synthesize keys into wayland (not supported in atspi right now)
+        subprocess.run(["selenium-webdriver-at-spi-inputsynth", str(keyval_to_keycode(char_to_keyval(ch)))])
+    else:
+        pyatspi.Registry.generateKeyboardEvent(char_to_keyval(ch), None, pyatspi.KEY_SYM)
+
+
+def keyval_to_keycode(keyval):
+    keymap = Gdk.Keymap.get_default()
+    ret, keys = keymap.get_entries_for_keyval(keyval)
+    if not ret:
+        raise RuntimeError("Failed to map key!")
+    return keys[0].keycode
 
 
 def char_to_keyval(ch):

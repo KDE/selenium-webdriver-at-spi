@@ -25,6 +25,7 @@ find_package(KF5 5.99 REQUIRED COMPONENTS WindowSystem Wayland)
 add_subdirectory(appidlister)
 add_subdirectory(screenshotter)
 add_subdirectory(autotests)
+add_subdirectory(inputsynth)
 
 install(PROGRAMS run.rb
     RENAME selenium-webdriver-at-spi-run
