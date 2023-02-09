@@ -7,6 +7,7 @@ Dependencies:
     'frameworks/extra-cmake-modules': '@latest'
     'frameworks/kwindowsystem': '@latest'
     'frameworks/kwayland': '@latest'
+    'plasma/kwin': '@same'
 
 Options:
   require-passing-tests-on: [ 'Linux' ]
