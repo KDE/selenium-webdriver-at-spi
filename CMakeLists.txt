@@ -11,6 +11,8 @@ include(FeatureSummary)
 include(KDEInstallDirs)
 include(KDECMakeSettings)
 include(KDECompilerSettings)
+include(KDEClangFormat)
+include(KDEGitCommitHooks)
 include(CMakePackageConfigHelpers)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -19,13 +21,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Disable legacy stuff to get rid of some deprecation warnings. Notably duplicated QProcess::finished overloads.
 add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0x050e00)
 
-find_package(Qt${QT_MAJOR_VERSION} ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Core DBus)
-find_package(KF5 5.99 REQUIRED COMPONENTS WindowSystem Wayland)
+find_package(Qt${QT_MAJOR_VERSION} ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Core DBus WaylandClient)
+find_package(KF5 5.99 REQUIRED COMPONENTS WindowSystem Wayland CoreAddons)
+
+find_package(KPipeWire REQUIRED)
+find_package(Wayland REQUIRED COMPONENTS Client)
+find_package(PlasmaWaylandProtocols REQUIRED)
+if (QT_MAJOR_VERSION EQUAL "5")
+    find_package(QtWaylandScanner REQUIRED)
+endif()
 
 add_subdirectory(appidlister)
 add_subdirectory(screenshotter)
 add_subdirectory(autotests)
 add_subdirectory(inputsynth)
+add_subdirectory(videorecorder)
 
 install(PROGRAMS run.rb
     RENAME selenium-webdriver-at-spi-run

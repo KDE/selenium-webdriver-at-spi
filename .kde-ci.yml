@@ -8,6 +8,7 @@ Dependencies:
     'frameworks/kwindowsystem': '@latest'
     'frameworks/kwayland': '@latest'
     'plasma/kwin': '@same'
+    'plasma/kpipewire': '@same'
 
 Options:
   require-passing-tests-on: [ 'Linux' ]
