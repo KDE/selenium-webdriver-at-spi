@@ -592,11 +592,11 @@ def session_appium_screenshot(session_id):
         return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
 
     # NB: these values incorrectly do not include the device pixel ratio, so they are off when used on a scaling display
-    position_x, position_y = session.browsing_context.getChildAtIndex(0).queryComponent().getPosition(pyatspi.XY_SCREEN)
-    size_width, size_height = session.browsing_context.getChildAtIndex(0).queryComponent().getSize()
+    # position_x, position_y = session.browsing_context.getChildAtIndex(0).queryComponent().getPosition(pyatspi.XY_SCREEN)
+    # size_width, size_height = session.browsing_context.getChildAtIndex(0).queryComponent().getSize()
 
     proc = subprocess.Popen(['selenium-webdriver-at-spi-screenshotter',
-                             str(position_x), str(position_y), str(size_width), str(size_height)],
+                             str(0), str(0), str(0), str(0)],
                             stdout=subprocess.PIPE)
     out, err = proc.communicate()
 
