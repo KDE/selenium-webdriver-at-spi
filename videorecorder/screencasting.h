@@ -9,32 +9,29 @@
 #include <QObject>
 #include <QSharedPointer>
 #include <QVector>
+#include <memory>
 #include <optional>
-
-#include <kpipewire_export.h>
 
 class QScreen;
 struct zkde_screencast_unstable_v1;
 
-namespace KWayland
-{
-namespace Client
+namespace KWayland::Client
 {
 class PlasmaWindow;
 class Registry;
 class Output;
-} // namespace Client
-} // namespace KWayland
+} // namespace KWayland::Client
 
 class ScreencastingPrivate;
 class ScreencastingSourcePrivate;
 class ScreencastingStreamPrivate;
-class KPIPEWIRE_EXPORT ScreencastingStream : public QObject
+class ScreencastingStream : public QObject
 {
     Q_OBJECT
 public:
-    ScreencastingStream(QObject *parent);
+    explicit ScreencastingStream(QObject *parent);
     ~ScreencastingStream() override;
+    Q_DISABLE_COPY_MOVE(ScreencastingStream)
 
     quint32 nodeId() const;
 
@@ -45,15 +42,16 @@ Q_SIGNALS:
 
 private:
     friend class Screencasting;
-    QScopedPointer<ScreencastingStreamPrivate> d;
+    std::unique_ptr<ScreencastingStreamPrivate> d;
 };
 
-class KPIPEWIRE_EXPORT Screencasting : public QObject
+class Screencasting : public QObject
 {
     Q_OBJECT
 public:
     explicit Screencasting(QObject *parent = nullptr);
     ~Screencasting() override;
+    Q_DISABLE_COPY_MOVE(Screencasting)
 
     enum CursorMode {
         Hidden = 1,
@@ -72,5 +70,5 @@ Q_SIGNALS:
     void sourcesChanged();
 
 private:
-    QScopedPointer<ScreencastingPrivate> d;
+    std::unique_ptr<ScreencastingPrivate> d;
 };

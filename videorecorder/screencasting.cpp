@@ -20,17 +20,18 @@ using namespace KWayland::Client;
 class ScreencastingStreamPrivate : public QtWayland::zkde_screencast_stream_unstable_v1
 {
 public:
-    ScreencastingStreamPrivate(ScreencastingStream *q)
+    explicit ScreencastingStreamPrivate(ScreencastingStream *q)
         : q(q)
     {
     }
-    ~ScreencastingStreamPrivate()
+    ~ScreencastingStreamPrivate() override
     {
         if (isInitialized()) {
             close();
         }
         q->deleteLater();
     }
+    Q_DISABLE_COPY_MOVE(ScreencastingStreamPrivate)
 
     void zkde_screencast_stream_unstable_v1_created(uint32_t node) override
     {
@@ -63,13 +64,13 @@ ScreencastingStream::~ScreencastingStream() = default;
 quint32 ScreencastingStream::nodeId() const
 {
     Q_ASSERT(d->m_nodeId.has_value());
-    return *d->m_nodeId;
+    return d->m_nodeId.value_or(0);
 }
 
 class ScreencastingPrivate : public QWaylandClientExtensionTemplate<ScreencastingPrivate>, public QtWayland::zkde_screencast_unstable_v1
 {
 public:
-    ScreencastingPrivate(Screencasting *q)
+    explicit ScreencastingPrivate(Screencasting *q)
         : QWaylandClientExtensionTemplate<ScreencastingPrivate>(ZKDE_SCREENCAST_UNSTABLE_V1_STREAM_REGION_SINCE_VERSION)
         , q(q)
     {
@@ -88,10 +89,11 @@ public:
         Q_ASSERT(isInitialized());
     }
 
-    ~ScreencastingPrivate()
+    ~ScreencastingPrivate() override
     {
         destroy();
     }
+    Q_DISABLE_COPY_MOVE(ScreencastingPrivate)
 
     Screencasting *const q;
 };

@@ -13,7 +13,7 @@
 #include <QLoggingCategory>
 #include <QScreen>
 
-#include <signal.h>
+#include <csignal>
 
 using namespace KWayland::Client;
 
