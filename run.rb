@@ -28,9 +28,12 @@ class ATSPIBus
     registry_pid = spawn(registry_path)
     block.yield
   ensure
-    # NB: do not KILL the launcher, it only shutsdown the a11y dbus-daemon when terminated!
+    # NB: do not signal KILL the launcher, it only shutsdown the a11y dbus-daemon when terminated!
     Process.kill('TERM', registry_pid) if launcher_pid
     Process.kill('TERM', launcher_pid) if registry_pid
+    # Restart the regular bus or the user may be left with malfunctioning accerciser
+    # (intentionally ignoring the return value! it never passes in the CI & freebsd in absence of systemd)
+    system('systemctl', 'restart', '--user', 'at-spi-dbus-bus.service') if launcher_pid
   end
 
   private
