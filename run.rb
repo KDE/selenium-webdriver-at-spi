@@ -12,6 +12,13 @@ def at_bus_exists?
   end
 end
 
+def terminate_pids(pids)
+  (pids || []).reverse.each do |pid|
+    Process.kill('TERM', pid)
+    Process.waitpid(pid)
+  end
+end
+
 class ATSPIBus
   def initialize(logger:)
     @logger = logger
@@ -26,16 +33,16 @@ class ATSPIBus
     registry_path = find_program('at-spi2-registryd')
     @logger.warn "Testing with #{launcher_path} and #{registry_path}"
 
-    launcher_pid = spawn(launcher_path, '--launch-immediately')
-    registry_pid = spawn(registry_path)
+    pids = []
+    pids << spawn(launcher_path, '--launch-immediately')
+    pids << spawn(registry_path)
     block.yield
   ensure
     # NB: do not signal KILL the launcher, it only shutsdown the a11y dbus-daemon when terminated!
-    Process.kill('TERM', registry_pid) if launcher_pid
-    Process.kill('TERM', launcher_pid) if registry_pid
+    terminate_pids(pids)
     # Restart the regular bus or the user may be left with malfunctioning accerciser
     # (intentionally ignoring the return value! it never passes in the CI & freebsd in absence of systemd)
-    system('systemctl', 'restart', '--user', 'at-spi-dbus-bus.service') if launcher_pid && bus_existed
+    system('systemctl', 'restart', '--user', 'at-spi-dbus-bus.service') if !pids.empty? && bus_existed
   end
 
   private
@@ -92,10 +99,7 @@ class Recorder
     pids << spawn('selenium-webdriver-at-spi-recorder', '--output', ENV.fetch('RECORD_VIDEO_NAME'))
     block.yield
   ensure
-    (pids || []).reverse.each do |pid|
-      Process.kill('TERM', pid)
-      Process.waitpid(pid)
-    end
+    terminate_pids(pids)
   end
 
   def self.find_program(name)
@@ -114,12 +118,13 @@ end
 
 class Driver
   def self.with(datadir, &block)
-    driver_pid = spawn({ 'FLASK_ENV' => 'production', 'FLASK_APP' => 'selenium-webdriver-at-spi.py' },
-                       'flask', 'run', '--port', PORT, '--no-reload',
-                       chdir: datadir)
+    pids = []
+    pids << spawn({ 'FLASK_ENV' => 'production', 'FLASK_APP' => 'selenium-webdriver-at-spi.py' },
+                  'flask', 'run', '--port', PORT, '--no-reload',
+                  chdir: datadir)
     block.yield
   ensure
-    Process.kill('TERM', driver_pid) if driver_pid
+    terminate_pids(pids)
   end
 end
 
