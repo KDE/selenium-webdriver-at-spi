@@ -82,6 +82,9 @@ class Recorder
 
     abort 'RECORD_VIDEO requires that a nested kwin wayland be used! (TEST_WITH_KWIN_WAYLAND)' unless ENV['KWIN_PID']
 
+    # Make sure kwin is up. This can be removed once the code was changed to re-exec as part of a kwin
+    # subprocess, then the wayland server is ready by the time we get re-executed.
+    sleep(5)
     pids = []
     pids << spawn('pipewire')
     pids << spawn('wireplumber')
