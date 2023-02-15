@@ -75,6 +75,40 @@ class KWin
   end
 end
 
+# Video recording wrapper
+class Recorder
+  def self.with(&block)
+    return block.yield unless ENV['RECORD_VIDEO_NAME']
+
+    abort 'RECORD_VIDEO requires that a nested kwin wayland be used! (TEST_WITH_KWIN_WAYLAND)' unless ENV['KWIN_PID']
+
+    pids = []
+    pids << spawn('pipewire')
+    pids << spawn('wireplumber')
+    pids << spawn(find_program('xdg-desktop-portal-kde'))
+    pids << spawn('selenium-webdriver-at-spi-recorder', '--output', ENV.fetch('RECORD_VIDEO_NAME'))
+    block.yield
+  ensure
+    (pids || []).reverse.each do |pid|
+      Process.kill('TERM', pid)
+      Process.waitpid(pid)
+    end
+  end
+
+  def self.find_program(name)
+    @paths ||= [
+      '/usr/libexec/', # debian & suse
+      '/usr/lib/' # arch
+    ] + ENV.fetch('LD_LIBRARY_PATH', '').split(':').map {|x| "#{x}/libexec"}
+
+    @paths.each do |x|
+      path = "#{x}/#{name}"
+      return path if File.exist?(path)
+    end
+    raise "Could not resolve absolute path for #{name}; searched in #{@paths.join(', ')}"
+  end
+end
+
 class Driver
   def self.with(datadir, &block)
     driver_pid = spawn({ 'FLASK_ENV' => 'production', 'FLASK_APP' => 'selenium-webdriver-at-spi.py' },
@@ -122,25 +156,27 @@ logger.info 'Starting supporting services'
 ret = false
 ATSPIBus.new(logger: logger).with do
   KWin.with do
-    Driver.with(datadir) do
-      i = 0
-      begin
-        require 'net/http'
-        Net::HTTP.get(URI("http://localhost:#{PORT}/status"))
-      rescue => e
-        i += 1
-        if i < 30
-          logger.info 'not up yet'
-          sleep 0.5
-          retry
+    Recorder.with do
+      Driver.with(datadir) do
+        i = 0
+        begin
+          require 'net/http'
+          Net::HTTP.get(URI("http://localhost:#{PORT}/status"))
+        rescue => e
+          i += 1
+          if i < 30
+            logger.info 'not up yet'
+            sleep 0.5
+            retry
+          end
+          raise e
         end
-        raise e
-      end
 
-      logger.info "starting test #{ARGV}"
-      IO.popen(ARGV, 'r', &:readlines)
-      ret = $?.success?
-      logger.info 'tests done'
+        logger.info "starting test #{ARGV}"
+        IO.popen(ARGV, 'r', &:readlines)
+        ret = $?.success?
+        logger.info 'tests done'
+      end
     end
   end
 end
