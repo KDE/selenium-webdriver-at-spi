@@ -42,7 +42,7 @@ class ATSPIBus
     terminate_pids(pids)
     # Restart the regular bus or the user may be left with malfunctioning accerciser
     # (intentionally ignoring the return value! it never passes in the CI & freebsd in absence of systemd)
-    system('systemctl', 'restart', '--user', 'at-spi-dbus-bus.service') if !pids.empty? && bus_existed
+    system('systemctl', 'restart', '--user', 'at-spi-dbus-bus.service') if !pids&.empty? && bus_existed
   end
 
   private
