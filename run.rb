@@ -20,6 +20,8 @@ class ATSPIBus
   def with(&block)
     return block.yield if at_bus_exists?
 
+    bus_existed = at_bus_exists?
+
     launcher_path = find_program('at-spi-bus-launcher')
     registry_path = find_program('at-spi2-registryd')
     @logger.warn "Testing with #{launcher_path} and #{registry_path}"
@@ -33,7 +35,7 @@ class ATSPIBus
     Process.kill('TERM', launcher_pid) if registry_pid
     # Restart the regular bus or the user may be left with malfunctioning accerciser
     # (intentionally ignoring the return value! it never passes in the CI & freebsd in absence of systemd)
-    system('systemctl', 'restart', '--user', 'at-spi-dbus-bus.service') if launcher_pid
+    system('systemctl', 'restart', '--user', 'at-spi-dbus-bus.service') if launcher_pid && bus_existed
   end
 
   private
