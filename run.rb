@@ -2,10 +2,11 @@
 # frozen_string_literal: true
 
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# SPDX-FileCopyrightText: 2022 Harald Sitter <sitter@kde.org>
+# SPDX-FileCopyrightText: 2022-2023 Harald Sitter <sitter@kde.org>
 
 require 'fileutils'
 require 'logger'
+require 'shellwords'
 
 def at_bus_exists?
   IO.popen(['dbus-send', '--print-reply', '--dest=org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus.ListNames'], 'r') do |io|
@@ -88,7 +89,7 @@ class KWin
       # the __FILE__ ARGV bit, separate ARGVs to kwin_wayland would be distinct subprocesses to start but we want
       # one processes with a bunch of arguments.
       exec('kwin_wayland', '--no-lockscreen', '--no-global-shortcuts', *extra_args,
-           '--exit-with-session', "#{__FILE__} #{ARGV.join(' ')}")
+           '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}")
     end
     exit(Process.waitpid(kwin_pid))
   end
