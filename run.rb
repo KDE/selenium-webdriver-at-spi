@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # SPDX-FileCopyrightText: 2022 Harald Sitter <sitter@kde.org>
 
+require 'fileutils'
 require 'logger'
 
 def at_bus_exists?
@@ -92,25 +93,33 @@ class Recorder
     # Make sure kwin is up. This can be removed once the code was changed to re-exec as part of a kwin
     # subprocess, then the wayland server is ready by the time we get re-executed.
     sleep(5)
+    FileUtils.rm_f(ENV['RECORD_VIDEO_NAME'])
     pids = []
     pids << spawn('pipewire')
     pids << spawn('wireplumber')
     pids << spawn(find_program('xdg-desktop-portal-kde'))
     pids << spawn('selenium-webdriver-at-spi-recorder', '--output', ENV.fetch('RECORD_VIDEO_NAME'))
+    5.times do
+      break if File.exist?(ENV['RECORD_VIDEO_NAME'])
+
+      sleep(1)
+    end
     block.yield
   ensure
     terminate_pids(pids)
   end
 
   def self.find_program(name)
-    @paths ||= [
-      '/usr/libexec/', # debian & suse
-      '/usr/lib/' # arch
-    ] + ENV.fetch('LD_LIBRARY_PATH', '').split(':').map {|x| "#{x}/libexec"}
+    @paths ||= ENV.fetch('LD_LIBRARY_PATH', '').split(':').map { |x| "#{x}/libexec" } +
+               [
+                 '/usr/lib/*/libexec/', # debian
+                 '/usr/libexec/', # suse
+                 '/usr/lib/' # arch
+               ]
 
     @paths.each do |x|
       path = "#{x}/#{name}"
-      return path if File.exist?(path)
+      return path if Dir.glob(path)&.first
     end
     raise "Could not resolve absolute path for #{name}; searched in #{@paths.join(', ')}"
   end
