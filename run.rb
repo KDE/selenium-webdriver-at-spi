@@ -91,7 +91,8 @@ class KWin
       exec('kwin_wayland', '--no-lockscreen', '--no-global-shortcuts', *extra_args,
            '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}")
     end
-    exit(Process.waitpid(kwin_pid))
+    _pid, status = Process.waitpid2(kwin_pid)
+    status.success? ? exit : abort
   end
 end
 
