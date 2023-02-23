@@ -67,19 +67,30 @@ end
 
 class KWin
   def self.with(&block)
+    # KWin redirection is a bit tricky. We want to run this script itself under kwin so both the flask server and
+    # the actual test script can inherit environment variables from that nested kwin. Most notably this is required
+    # to have the correct DISPLAY set to access the xwayland instance.
+    # As such this function has two behavior modes. If kwin redirection should run (that is: it's not yet inside kwin)
+    # it will fork and exec into kwin. If redirection is not required it yields out.
+
+    return block.yield if ENV.include?('KWIN_PID') # already inside a kwin parent
     return block.yield if ENV['TEST_WITH_KWIN_WAYLAND'] == '0'
 
-    ENV['QT_QPA_PLATFORM'] = 'wayland'
-    ENV['KWIN_SCREENSHOT_NO_PERMISSION_CHECKS'] = '1'
-    ENV['KWIN_WAYLAND_NO_PERMISSION_CHECKS'] = '1'
-    extra_args = []
-    extra_args << '--virtual' if ENV['LIBGL_ALWAYS_SOFTWARE']
-    kwin_pid = spawn('kwin_wayland', '--no-lockscreen', '--no-global-shortcuts',
-                     *extra_args)
-    ENV['KWIN_PID'] = kwin_pid.to_s
-    block.yield
-  ensure
-    Process.kill('TERM', kwin_pid) if kwin_pid
+    kwin_pid = fork do
+      ENV['QT_QPA_PLATFORM'] = 'wayland'
+      ENV['KWIN_SCREENSHOT_NO_PERMISSION_CHECKS'] = '1'
+      ENV['KWIN_WAYLAND_NO_PERMISSION_CHECKS'] = '1'
+      ENV['KWIN_PID'] = Process.pid.to_s
+      extra_args = []
+      extra_args << '--virtual' if ENV['LIBGL_ALWAYS_SOFTWARE']
+      extra_args << '--xwayland' if ENV.fetch('TEST_WITH_XWAYLAND', '0').to_i.positive?
+      # A bit awkward because of how argument parsing works on the kwin side: we must rely on shell word merging for
+      # the __FILE__ ARGV bit, separate ARGVs to kwin_wayland would be distinct subprocesses to start but we want
+      # one processes with a bunch of arguments.
+      exec('kwin_wayland', '--no-lockscreen', '--no-global-shortcuts', *extra_args,
+           '--exit-with-session', "#{__FILE__} #{ARGV.join(' ')}")
+    end
+    exit(Process.waitpid(kwin_pid))
   end
 end
 
@@ -144,7 +155,7 @@ unless ENV.include?('CUSTOM_BUS') # not inside a nested bus (yet)
   if ENV.fetch('USE_CUSTOM_BUS', '0').to_i > 0 || !at_bus_exists? # should we nest at all?
     logger.info('starting dbus session')
     ENV['CUSTOM_BUS'] = '1'
-    # Using system() so we can print useful debug information after the run
+    # Using spawn() rather than exec() so we can print useful debug information after the run
     # (useful to debug problems with shutdown of started processes)
     pid = spawn('dbus-run-session', '--', __FILE__, *ARGV, pgroup: true)
     pgid = Process.getpgid(pid)
