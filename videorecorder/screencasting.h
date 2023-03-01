@@ -61,13 +61,9 @@ public:
     Q_ENUM(CursorMode);
 
     ScreencastingStream *createRegionStream(const QRect &region, qreal scaling, CursorMode mode);
+    ScreencastingStream *createOutputStream(QScreen *screen, CursorMode mode);
 
     void destroy();
-
-Q_SIGNALS:
-    void initialized();
-    void removed();
-    void sourcesChanged();
 
 private:
     std::unique_ptr<ScreencastingPrivate> d;
