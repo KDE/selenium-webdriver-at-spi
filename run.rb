@@ -14,6 +14,15 @@ def at_bus_exists?
   end
 end
 
+def terminate_pgids(pgids)
+  (pgids || []).reverse.each do |pgid|
+    Process.kill('-TERM', pgid)
+    Process.waitpid(pgid)
+  rescue Errno::ECHILD => e
+    warn "Process group not found #{e}"
+  end
+end
+
 def terminate_pids(pids)
   (pids || []).reverse.each do |pid|
     Process.kill('TERM', pid)
@@ -66,34 +75,55 @@ class ATSPIBus
   end
 end
 
-class KWin
-  def self.with(&block)
-    # KWin redirection is a bit tricky. We want to run this script itself under kwin so both the flask server and
-    # the actual test script can inherit environment variables from that nested kwin. Most notably this is required
-    # to have the correct DISPLAY set to access the xwayland instance.
-    # As such this function has two behavior modes. If kwin redirection should run (that is: it's not yet inside kwin)
-    # it will fork and exec into kwin. If redirection is not required it yields out.
+def kwin_reexec!
+  # KWin redirection is a bit tricky. We want to run this script itself under kwin so both the flask server and
+  # the actual test script can inherit environment variables from that nested kwin. Most notably this is required
+  # to have the correct DISPLAY set to access the xwayland instance.
+  # As such this function has two behavior modes. If kwin redirection should run (that is: it's not yet inside kwin)
+  # it will fork and exec into kwin. If redirection is not required it yields out.
 
-    return block.yield if ENV.include?('KWIN_PID') # already inside a kwin parent
-    return block.yield if ENV['TEST_WITH_KWIN_WAYLAND'] == '0'
+  return if ENV.include?('KWIN_PID') # already inside a kwin parent
+  return if ENV['TEST_WITH_KWIN_WAYLAND'] == '0'
 
-    kwin_pid = fork do
-      ENV['QT_QPA_PLATFORM'] = 'wayland'
-      ENV['KWIN_SCREENSHOT_NO_PERMISSION_CHECKS'] = '1'
-      ENV['KWIN_WAYLAND_NO_PERMISSION_CHECKS'] = '1'
-      ENV['KWIN_PID'] = Process.pid.to_s
-      extra_args = []
-      extra_args << '--virtual' if ENV['LIBGL_ALWAYS_SOFTWARE']
-      extra_args << '--xwayland' if ENV.fetch('TEST_WITH_XWAYLAND', '0').to_i.positive?
-      # A bit awkward because of how argument parsing works on the kwin side: we must rely on shell word merging for
-      # the __FILE__ ARGV bit, separate ARGVs to kwin_wayland would be distinct subprocesses to start but we want
-      # one processes with a bunch of arguments.
-      exec('kwin_wayland', '--no-lockscreen', '--no-global-shortcuts', *extra_args,
-           '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}")
-    end
-    _pid, status = Process.waitpid2(kwin_pid)
-    status.success? ? exit : abort
+  kwin_pid = fork do |pid|
+    ENV['QT_QPA_PLATFORM'] = 'wayland'
+    ENV['KWIN_SCREENSHOT_NO_PERMISSION_CHECKS'] = '1'
+    ENV['KWIN_WAYLAND_NO_PERMISSION_CHECKS'] = '1'
+    ENV['KWIN_PID'] = pid.to_s
+    extra_args = []
+    extra_args << '--virtual' if ENV['LIBGL_ALWAYS_SOFTWARE']
+    extra_args << '--xwayland' if ENV.fetch('TEST_WITH_XWAYLAND', '0').to_i.positive?
+    # A bit awkward because of how argument parsing works on the kwin side: we must rely on shell word merging for
+    # the __FILE__ ARGV bit, separate ARGVs to kwin_wayland would be distinct subprocesses to start but we want
+    # one processes with a bunch of arguments.
+    exec('kwin_wayland', '--no-lockscreen', '--no-global-shortcuts', *extra_args,
+         '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}")
   end
+  _pid, status = Process.waitpid2(kwin_pid)
+  status.success? ? exit : abort
+end
+
+def dbus_reexec!(logger:)
+  return if ENV.include?('CUSTOM_BUS') # already inside a nested bus
+
+  if ENV.fetch('USE_CUSTOM_BUS', '0').to_i.zero? && # not explicitly enabled
+     at_bus_exists? # already have an a11y bus, use it
+
+    logger.info('using existing dbus session')
+    return
+  end
+
+  logger.info('starting dbus session')
+  ENV['CUSTOM_BUS'] = '1'
+  # Using spawn() rather than exec() so we can print useful debug information after the run
+  # (useful to debug problems with shutdown of started processes)
+  pid = spawn('dbus-run-session', '--', __FILE__, *ARGV, pgroup: true)
+  pgid = Process.getpgid(pid)
+  _pid, status = Process.waitpid2(pid)
+  terminate_pgids([pgid])
+  logger.info('dbus session ended')
+  system('ps fja')
+  status.success? ? exit : abort
 end
 
 # Video recording wrapper
@@ -150,31 +180,14 @@ class Driver
   end
 end
 
+PORT = '4723'
 $stdout.sync = true # force immediate flushing without internal caching
 logger = Logger.new($stdout)
 
-unless ENV.include?('CUSTOM_BUS') # not inside a nested bus (yet)
-  if ENV.fetch('USE_CUSTOM_BUS', '0').to_i > 0 || !at_bus_exists? # should we nest at all?
-    logger.info('starting dbus session')
-    ENV['CUSTOM_BUS'] = '1'
-    # Using spawn() rather than exec() so we can print useful debug information after the run
-    # (useful to debug problems with shutdown of started processes)
-    pid = spawn('dbus-run-session', '--', __FILE__, *ARGV, pgroup: true)
-    pgid = Process.getpgid(pid)
-    Process.wait(pid)
-    ret = $?
-    Process.kill('-TERM', pgid)
-    logger.info('dbus session ended')
-    system('ps fja')
-    ret.success? ? exit : abort
-  else
-    logger.info('using existing dbus session')
-  end
-end
+dbus_reexec!(logger: logger)
+kwin_reexec!
+raise 'Failed to set dbus env' unless system('dbus-update-activation-environment', '--all')
 
-PORT = '4723'
-
-# TODO move this elsewhere
 logger.info 'Installing dependencies'
 datadir = File.absolute_path("#{__dir__}/../share/selenium-webdriver-at-spi/")
 if File.exist?("#{datadir}/requirements.txt")
@@ -182,31 +195,28 @@ if File.exist?("#{datadir}/requirements.txt")
   ENV['PATH'] = "#{Dir.home}/.local/bin:#{ENV.fetch('PATH')}"
 end
 
-logger.info 'Starting supporting services'
 ret = false
 ATSPIBus.new(logger: logger).with do
-  KWin.with do
-    Recorder.with do
-      Driver.with(datadir) do
-        i = 0
-        begin
-          require 'net/http'
-          Net::HTTP.get(URI("http://localhost:#{PORT}/status"))
-        rescue => e
-          i += 1
-          if i < 30
-            logger.info 'not up yet'
-            sleep 0.5
-            retry
-          end
-          raise e
+  Recorder.with do
+    Driver.with(datadir) do
+      i = 0
+      begin
+        require 'net/http'
+        Net::HTTP.get(URI("http://localhost:#{PORT}/status"))
+      rescue => e
+        i += 1
+        if i < 30
+          logger.info 'not up yet'
+          sleep 0.5
+          retry
         end
-
-        logger.info "starting test #{ARGV}"
-        IO.popen(ARGV, 'r', &:readlines)
-        ret = $?.success?
-        logger.info 'tests done'
+        raise e
       end
+
+      logger.info "starting test #{ARGV}"
+      IO.popen(ARGV, 'r', &:readlines)
+      ret = $?.success?
+      logger.info 'tests done'
     end
   end
 end
