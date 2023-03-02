@@ -185,6 +185,12 @@ PORT = '4723'
 $stdout.sync = true # force immediate flushing without internal caching
 logger = Logger.new($stdout)
 
+# Tweak the CIs logging rules. They are way too verbose for our purposes
+ENV['QT_LOGGING_RULES'] = <<-RULES.gsub(/\n/, '').squeeze
+  *.debug=true;qt.text.font.db=false;kf.globalaccel.kglobalacceld=false;kf.wayland.client=false;
+  qt.quick.hover.*=false;qt.quick.layouts=false;qt.scenegraph.*=false;qt.qml.diskcache=false;qt.text.font.*=false;
+RULES
+
 dbus_reexec!(logger: logger)
 kwin_reexec!
 raise 'Failed to set dbus env' unless system('dbus-update-activation-environment', '--all')
