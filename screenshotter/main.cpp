@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 
     const auto service = kwinService();
     if (!service.has_value()) {
-        qWarning() << "service not resolved";
+        qWarning() << "kwin dbus service not resolved";
         return 1;
     }
 
