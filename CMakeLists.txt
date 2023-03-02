@@ -22,7 +22,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0x050e00)
 
 find_package(Qt${QT_MAJOR_VERSION} ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Core DBus WaylandClient)
-find_package(KF5 5.99 REQUIRED COMPONENTS WindowSystem Wayland CoreAddons)
+if(QT_MAJOR_VERSION EQUAL "5")
+    find_package(KF5 5.99 REQUIRED COMPONENTS WindowSystem Wayland CoreAddons)
+else()
+    find_package(KF6 5.240 REQUIRED COMPONENTS WindowSystem Wayland CoreAddons)
+endif()
 
 find_package(KPipeWire REQUIRED)
 find_package(Wayland REQUIRED COMPONENTS Client)

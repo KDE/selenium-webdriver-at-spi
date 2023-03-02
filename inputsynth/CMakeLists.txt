@@ -8,6 +8,6 @@ add_executable(selenium-webdriver-at-spi-inputsynth main.cpp)
 target_link_libraries(selenium-webdriver-at-spi-inputsynth
     Qt::Core
     Qt::Gui
-    KF5::WaylandClient
+    KF${QT_MAJOR_VERSION}::WaylandClient
 )
 install(TARGETS selenium-webdriver-at-spi-inputsynth ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})

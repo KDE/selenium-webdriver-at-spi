@@ -11,7 +11,7 @@ target_link_libraries(selenium-webdriver-at-spi-recorder
     Qt::GuiPrivate
     Qt::WaylandClient
     Qt::DBus
-    KF5::CoreAddons
+    KF${QT_MAJOR_VERSION}::CoreAddons
     Wayland::Client
     K::KPipeWireRecord
 )
