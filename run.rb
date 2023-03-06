@@ -189,6 +189,8 @@ logger = Logger.new($stdout)
 ENV['QT_LOGGING_RULES'] = <<-RULES.gsub(/\n/, '').squeeze
   *.debug=true;qt.text.font.db=false;kf.globalaccel.kglobalacceld=false;kf.wayland.client=false;
   qt.quick.hover.*=false;qt.quick.layouts=false;qt.scenegraph.*=false;qt.qml.diskcache=false;qt.text.font.*=false;
+  qt.qml.gc.*=false;qt.qpa.wayland.*=false;qt.quick.dirty=false;qt.accessibility.cache=false;qt.v4.asm=false;
+  qt.quick.itemview.delegaterecycling=false;qt.opengl.diskcache=false;qt.qpa.fonts=false;kf.kio.workers.http=false;
 RULES
 
 dbus_reexec!(logger: logger)
