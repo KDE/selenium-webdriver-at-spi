@@ -83,6 +83,7 @@ class SimpleCalculatorTests(unittest.TestCase):
         button1 = self.driver.find_element(by=AppiumBy.NAME, value="1")
         button1.click()
         button1.click()
+        self.driver.find_element(by=AppiumBy.NAME, value="=").click()
         self.assertResult(self.getresults(), "8")
 
     def test_multiplication(self):
