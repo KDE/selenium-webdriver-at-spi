@@ -30,6 +30,7 @@ from app_roles import ROLE_NAMES
 # https://github.com/microsoft/WinAppDriver/blob/master/Docs/SupportedAPIs.md
 # https://www.freedesktop.org/wiki/Accessibility/PyAtSpi2Example/
 
+EVENTLOOP_TIME = 0.5
 sys.stdout = sys.stderr
 sessions = {}  # global dict of open sessions
 
@@ -396,6 +397,7 @@ def session_element_click(session_id, element_id):
     if 'SetFocus' in keys: # this is used in addition to actual actions so focus is where it would be expected after a click
         print("actioning focus")
         action.doAction(availableActions['SetFocus'])
+        time.sleep(EVENTLOOP_TIME)
 
     if 'Press' in keys:
         print("actioning press")
@@ -403,6 +405,7 @@ def session_element_click(session_id, element_id):
     elif 'Toggle' in keys:
         print("actioning toggle")
         action.doAction(availableActions['Toggle'])
+    time.sleep(EVENTLOOP_TIME)
 
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
@@ -613,10 +616,10 @@ def session_appium_screenshot(session_id):
 def generate_keyboard_event(ch):
     if 'KWIN_PID' in os.environ: # using a nested kwin. need to synthesize keys into wayland (not supported in atspi right now)
         subprocess.run(["selenium-webdriver-at-spi-inputsynth", str(keyval_to_keycode(char_to_keyval(ch)))])
-        time.sleep(0.5)
+        time.sleep(EVENTLOOP_TIME)
     else:
         pyatspi.Registry.generateKeyboardEvent(char_to_keyval(ch), None, pyatspi.KEY_SYM)
-        time.sleep(0.5)
+        time.sleep(EVENTLOOP_TIME)
 
 
 def keyval_to_keycode(keyval):
