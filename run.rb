@@ -193,6 +193,8 @@ ENV['QT_LOGGING_RULES'] = <<-RULES.gsub(/\s/, '')
   qt.quick.hover.*=false;qt.quick.layouts=false;qt.scenegraph.*=false;qt.qml.diskcache=false;qt.text.font.*=false;
   qt.qml.gc.*=false;qt.qpa.wayland.*=false;qt.quick.dirty=false;qt.accessibility.cache=false;qt.v4.asm=false;
   qt.quick.itemview.delegaterecycling=false;qt.opengl.diskcache=false;qt.qpa.fonts=false;kf.kio.workers.http=false;
+  qt.quick.pointer.events=false;qt.quick.handler.dispatch=false;qt.quick.mouse.target=false;qt.quick.mouse=false;
+  qt.quick.focus=false;qt.text.layout=false;
 RULES
 
 dbus_reexec!(logger: logger)
