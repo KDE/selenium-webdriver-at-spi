@@ -194,7 +194,7 @@ ENV['QT_LOGGING_RULES'] = <<-RULES.gsub(/\s/, '')
   qt.qml.gc.*=false;qt.qpa.wayland.*=false;qt.quick.dirty=false;qt.accessibility.cache=false;qt.v4.asm=false;
   qt.quick.itemview.delegaterecycling=false;qt.opengl.diskcache=false;qt.qpa.fonts=false;kf.kio.workers.http=false;
   qt.quick.pointer.events=false;qt.quick.handler.dispatch=false;qt.quick.mouse.target=false;qt.quick.mouse=false;
-  qt.quick.focus=false;qt.text.layout=false;
+  qt.quick.focus=false;qt.text.layout=false;qt.qpa.input.methods=false;
 RULES
 ENV['QT_LOGGING_RULES'] = ENV['QT_LOGGING_RULES_OVERRIDE'] if ENV.include?('QT_LOGGING_RULES_OVERRIDE')
 
