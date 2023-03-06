@@ -186,7 +186,7 @@ $stdout.sync = true # force immediate flushing without internal caching
 logger = Logger.new($stdout)
 
 # Tweak the CIs logging rules. They are way too verbose for our purposes
-ENV['QT_LOGGING_RULES'] = <<-RULES.gsub(/\n/, '').squeeze
+ENV['QT_LOGGING_RULES'] = <<-RULES.gsub(/\s/, '')
   *.debug=true;qt.text.font.db=false;kf.globalaccel.kglobalacceld=false;kf.wayland.client=false;
   qt.quick.hover.*=false;qt.quick.layouts=false;qt.scenegraph.*=false;qt.qml.diskcache=false;qt.text.font.*=false;
   qt.qml.gc.*=false;qt.qpa.wayland.*=false;qt.quick.dirty=false;qt.accessibility.cache=false;qt.v4.asm=false;
