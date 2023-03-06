@@ -149,10 +149,10 @@ class Recorder
     end
     block.yield
   ensure
+    terminate_pids(pids)
     if ENV['RECORD_VIDEO_NAME'] && File.size(ENV['RECORD_VIDEO_NAME']) < 256_000
       warn "recording apparently didn't work properly"
     end
-    terminate_pids(pids)
   end
 
   def self.find_program(name)
