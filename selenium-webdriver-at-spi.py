@@ -32,7 +32,7 @@ from app_roles import ROLE_NAMES
 
 EVENTLOOP_TIME = 0.5
 sys.stdout = sys.stderr
-sessions = {}  # global dict of open sessions
+sessions = {} # global dict of open sessions
 
 # Give the GUI enough time to react. tests run on the CI won't always be responsive in the tight schedule established by at-spi2 (800ms) and run risk
 # of timing out on (e.g.) click events. The second value is the timeout for app startup, we keep that the same as upstream.
