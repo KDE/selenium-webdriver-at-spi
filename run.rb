@@ -196,6 +196,7 @@ ENV['QT_LOGGING_RULES'] = <<-RULES.gsub(/\s/, '')
   qt.quick.pointer.events=false;qt.quick.handler.dispatch=false;qt.quick.mouse.target=false;qt.quick.mouse=false;
   qt.quick.focus=false;qt.text.layout=false;
 RULES
+ENV['QT_LOGGING_RULES'] = ENV['QT_LOGGING_RULES_OVERRIDE'] if ENV.include?('QT_LOGGING_RULES_OVERRIDE')
 
 dbus_reexec!(logger: logger)
 kwin_reexec!
