@@ -16,9 +16,12 @@ import pyatspi
 from lxml import etree
 
 import gi
+from gi.repository import GLib
 from gi.repository import Gio
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
 
 from app_roles import ROLE_NAMES
 
@@ -589,6 +592,70 @@ def session_appium_device_press_keycode(session_id):
     # flags = blob['flags']
     for ch in keycode:
         generate_keyboard_event(ch)
+    return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
+
+
+@app.route('/session/<session_id>/appium/device/get_clipboard', methods=['POST'])
+def session_appium_device_get_clipboard(session_id):
+    session = sessions[session_id]
+    if not session:
+        return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    blob = json.loads(request.data)
+    contentType = blob['contentType']
+
+    # NOTE: need a window because on wayland we must be the active window to manipulate the clipboard (currently anyway)
+    window = Gtk.Window()
+    window.set_default_size(20, 20);
+    window.show()
+    display = window.get_display()
+    clipboard = Gtk.Clipboard.get_for_display(display, Gdk.SELECTION_CLIPBOARD)
+
+    context = GLib.MainContext.default()
+    for _ in range(4):
+        time.sleep(0.5)
+        while context.pending():
+            context.iteration(may_block=False)
+
+    data = None
+    if contentType == 'plaintext':
+        print("text")
+        data = clipboard.wait_for_text()
+    else:
+        raise 'content type not currently supported'
+
+    window.close()
+    return json.dumps({'value': base64.b64encode(data.encode('utf-8')).decode('utf-8')}), 200, {'content-type': 'application/json'}
+
+
+@app.route('/session/<session_id>/appium/device/set_clipboard', methods=['POST'])
+def session_appium_device_set_clipboard(session_id):
+    session = sessions[session_id]
+    if not session:
+        return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    blob = json.loads(request.data)
+    contentType = blob['contentType']
+    content = blob['content']
+
+    # NOTE: need a window because on wayland we must be the active window to manipulate the clipboard (currently anyway)
+    window = Gtk.Window()
+    window.set_default_size(20, 20);
+    display = window.get_display()
+    clipboard = Gtk.Clipboard.get_for_display(display, Gdk.SELECTION_CLIPBOARD)
+
+    if contentType == 'plaintext':
+        clipboard.set_text(base64.b64decode(content).decode('utf-8'), -1)
+    else:
+        raise 'content type not currently supported'
+
+    context = GLib.MainContext.default()
+    for _ in range(4):
+        time.sleep(0.5)
+        while context.pending():
+            context.iteration(may_block=False)
+
+    window.close()
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
