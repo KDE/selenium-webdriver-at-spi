@@ -619,7 +619,6 @@ def session_appium_device_get_clipboard(session_id):
 
     data = None
     if contentType == 'plaintext':
-        print("text")
         data = clipboard.wait_for_text()
     else:
         raise 'content type not currently supported'
