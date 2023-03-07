@@ -511,11 +511,6 @@ def session_element_value(session_id, element_id):
     print(element)
 
     try:
-        print(element.queryText())
-        print(element.queryText().getText(0, -1))
-        print(element.queryText().getDefaultAttributes())
-        print(element.queryText().characterCount)
-        print(element.queryText().caretOffset)
         offset = element.queryText().caretOffset
         textElement = element.queryEditableText()
         textElement.insertText(offset, text, len(text))
@@ -523,14 +518,12 @@ def session_element_value(session_id, element_id):
     except NotImplementedError:
         print("element is not text type, falling back to synthesizing keyboard events")
         action = element.queryAction()
-        print(dir(action))
         processed = False
         for i in range(0, action.nActions):
-            print(action.getName(i))
             if action.getName(i) == 'SetFocus':
-                time.sleep(EVENTLOOP_TIME) # give the focus time to apply
                 processed = True
                 action.doAction(i)
+                time.sleep(EVENTLOOP_TIME) # give the focus time to apply
                 for ch in text:
                     generate_keyboard_event(ch)
                 break
