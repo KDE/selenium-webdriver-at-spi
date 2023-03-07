@@ -33,10 +33,6 @@ from app_roles import ROLE_NAMES
 # https://github.com/microsoft/WinAppDriver/blob/master/Docs/SupportedAPIs.md
 # https://www.freedesktop.org/wiki/Accessibility/PyAtSpi2Example/
 
-if 'KWIN_PID' in os.environ:
-    # try to make sure our clipboard window runs inside wayland if we are inside a nested kwin
-    os.environ['GDK_BACKEND'] = 'wayland'
-
 EVENTLOOP_TIME = 0.5
 sys.stdout = sys.stderr
 sessions = {} # global dict of open sessions
