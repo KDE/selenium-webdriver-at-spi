@@ -528,6 +528,7 @@ def session_element_value(session_id, element_id):
         for i in range(0, action.nActions):
             print(action.getName(i))
             if action.getName(i) == 'SetFocus':
+                time.sleep(EVENTLOOP_TIME) # give the focus time to apply
                 processed = True
                 action.doAction(i)
                 for ch in text:
