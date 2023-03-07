@@ -23,7 +23,7 @@ class SimpleCalculatorTests(unittest.TestCase):
 
     def test_initialize(self):
         self.driver.set_clipboard_text("asdf")
-        text = self.driver.get_clipboard_text("asdf")
+        text = self.driver.get_clipboard_text()
         self.assertEqual(text, "asdf")
 
 if __name__ == '__main__':
