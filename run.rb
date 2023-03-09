@@ -150,7 +150,8 @@ class Recorder
     block.yield
   ensure
     terminate_pids(pids)
-    if ENV['RECORD_VIDEO_NAME'] && File.size(ENV['RECORD_VIDEO_NAME']) < 256_000
+    if ENV['RECORD_VIDEO_NAME'] &&
+       (!File.exist?(ENV['RECORD_VIDEO_NAME']) || File.size(ENV['RECORD_VIDEO_NAME']) < 256_000)
       warn "recording apparently didn't work properly"
     end
   end
