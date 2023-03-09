@@ -31,12 +31,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     set_tests_properties(clipboardtest PROPERTIES TIMEOUT 30)
 
     add_test(
-        NAME calculatortest
-        COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/calculatortest.py
-    )
-    set_tests_properties(calculatortest PROPERTIES TIMEOUT 300)
-
-    add_test(
         NAME shiftsynthesizertest
         COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/shiftsynthesizertest.rb
     )
@@ -53,6 +47,12 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/kinfocentertest.rb
     )
     set_tests_properties(kinfocentertest PROPERTIES TIMEOUT 300 ENVIRONMENT "TEST_WITH_XWAYLAND=1")
+
+    add_test(
+        NAME calculatortest
+        COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/calculatortest.py
+    )
+    set_tests_properties(calculatortest PROPERTIES TIMEOUT 300)
 endif()
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
