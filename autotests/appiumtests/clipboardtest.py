@@ -27,5 +27,4 @@ class SimpleCalculatorTests(unittest.TestCase):
         self.assertEqual(text, "asdf")
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCalculatorTests)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    unittest.main()

@@ -101,5 +101,4 @@ class SimpleCalculatorTests(unittest.TestCase):
         self.assertResult(self.getresults(), "8")
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCalculatorTests)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    unittest.main()
