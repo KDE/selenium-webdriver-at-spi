@@ -37,6 +37,12 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     set_tests_properties(calculatortest PROPERTIES TIMEOUT 300)
 
     add_test(
+        NAME shiftsynthesizertest
+        COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/shiftsynthesizertest.rb
+    )
+    set_tests_properties(shiftsynthesizertest PROPERTIES TIMEOUT 30)
+
+    add_test(
         NAME kinfocentertest
         COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/kinfocentertest.rb
     )

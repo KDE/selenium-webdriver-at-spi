@@ -3,6 +3,7 @@
 
 import base64
 from datetime import datetime, timedelta
+import tempfile
 import time
 from flask import Flask, request
 import uuid
@@ -423,9 +424,9 @@ def session_element_text(session_id, element_id):
     element = session.elements[element_id]
     try:
         textElement = element.queryText()
-        return json.dumps({'value': textElement.getText(0, -1)})
+        return json.dumps({'value': textElement.getText(0, -1)}), 200, {'content-type': 'application/json'}
     except NotImplementedError:
-        return json.dumps({'value': element.name})
+        return json.dumps({'value': element.name}), 200, {'content-type': 'application/json'}
 
 
 @app.route('/session/<session_id>/element/<element_id>/enabled', methods=['GET'])
@@ -679,7 +680,13 @@ def session_appium_screenshot(session_id):
 
 def generate_keyboard_event(ch):
     if 'KWIN_PID' in os.environ: # using a nested kwin. need to synthesize keys into wayland (not supported in atspi right now)
-        subprocess.run(["selenium-webdriver-at-spi-inputsynth", str(keyval_to_keycode(char_to_keyval(ch)))])
+        with tempfile.NamedTemporaryFile() as fp:
+            keymap = keyval_to_keycode(char_to_keyval(ch))
+            fp.write(json.dumps([
+                {'type': 'keyboard', 'level': keymap.level, 'keycode': keymap.keycode}
+            ]).encode())
+            fp.flush()
+            subprocess.run(["selenium-webdriver-at-spi-inputsynth", fp.name])
         time.sleep(EVENTLOOP_TIME)
     else:
         pyatspi.Registry.generateKeyboardEvent(char_to_keyval(ch), None, pyatspi.KEY_SYM)
@@ -691,7 +698,7 @@ def keyval_to_keycode(keyval):
     ret, keys = keymap.get_entries_for_keyval(keyval)
     if not ret:
         raise RuntimeError("Failed to map key!")
-    return keys[0].keycode
+    return keys[0]
 
 
 def char_to_keyval(ch):
