@@ -698,11 +698,7 @@ def session_appium_screenshot(session_id):
     if not out:
         return json.dumps({'value': {'error': err}}), 404, {'content-type': 'application/json'}
 
-    output = open(out, 'rb').read()
-    os.unlink(out)
-    print("READING {}".format(out))
-
-    return json.dumps({'value': base64.b64encode(output).decode('utf-8')}), 200, {'content-type': 'application/json'}
+    return json.dumps({'value': out.decode('utf-8')}), 200, {'content-type': 'application/json'}
 
 
 def generate_keyboard_event(ch):

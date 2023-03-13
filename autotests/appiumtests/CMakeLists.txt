@@ -25,6 +25,12 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     )
 
     add_test(
+        NAME screenshottest
+        COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/screenshottest.py
+    )
+    set_tests_properties(screenshottest PROPERTIES TIMEOUT 15)
+
+    add_test(
         NAME valuetest
         COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/valuetest.py
     )
