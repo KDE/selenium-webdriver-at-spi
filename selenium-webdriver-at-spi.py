@@ -465,6 +465,10 @@ def session_element_attribute(session_id, element_id, name):
     if name == "accessibility-id":
         return json.dumps({'value': element.accessibleId}), 200, {'content-type': 'application/json'}
 
+    if name == "value":
+        elementValue = element.queryValue()
+        return json.dumps({'value': elementValue.currentValue}), 200, {'content-type': 'application/json'}
+
     print(pyatspi.STATE_VALUE_TO_NAME)
     result = None
     for value, string in pyatspi.STATE_VALUE_TO_NAME.items():
@@ -651,6 +655,29 @@ def session_appium_device_set_clipboard(session_id):
 
     window.close()
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
+
+
+@app.route('/session/<session_id>/appium/element/<element_id>/value', methods=['POST'])
+def session_appium_element_value(session_id, element_id):
+    session = sessions[session_id]
+    if not session:
+        return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    element = session.elements[element_id]
+    if not element:
+        return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
+
+    blob = json.loads(request.data)
+    print(blob)
+    print(element)
+    value = blob['value'][0]
+
+    try:
+        valueElement = element.queryValue()
+        valueElement.currentValue = float(value)
+        return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
+    except NotImplementedError:
+        return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
 @app.route('/session/<session_id>/screenshot', methods=['GET'])
