@@ -20,12 +20,13 @@ using namespace KWayland::Client;
 int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
+    auto m_record = new PipeWireRecord(&app);
 
     QCommandLineParser parser;
     QCommandLineOption outputOption(QStringLiteral("output"),
                                     QStringLiteral("path for the generated video"),
                                     QStringLiteral("path"),
-                                    QStringLiteral("recording.%1").arg(PipeWireRecord::extension()));
+                                    QStringLiteral("recording.%1").arg(m_record->extension()));
     parser.addHelpOption();
     parser.addOption(outputOption);
     parser.process(app);
@@ -38,7 +39,6 @@ int main(int argc, char **argv)
     }
 
     auto stream = screencasting.createRegionStream(region, 1, Screencasting::Metadata);
-    auto m_record = new PipeWireRecord(&app);
     m_record->setOutput(parser.value(outputOption));
     QObject::connect(stream, &ScreencastingStream::created, &app, [stream, m_record] {
         m_record->setNodeId(stream->nodeId());
