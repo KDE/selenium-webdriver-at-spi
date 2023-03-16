@@ -537,6 +537,39 @@ def session_element_value(session_id, element_id):
         return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
+@app.route('/session/<session_id>/element/<element_id>/clear', methods=['POST'])
+def session_element_clear(session_id, element_id):
+    session = sessions[session_id]
+    if not session:
+        return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    element = session.elements[element_id]
+    if not element:
+        return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
+
+    characterCount = element.queryText().characterCount
+    try:
+        textElement = element.queryEditableText()
+        textElement.deleteText(0, characterCount)
+        return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
+    except NotImplementedError:
+        print("element is not text type, falling back to synthesizing keyboard events")
+        action = element.queryAction()
+        processed = False
+        for i in range(0, action.nActions):
+            if action.getName(i) == 'SetFocus':
+                processed = True
+                action.doAction(i)
+                time.sleep(EVENTLOOP_TIME) # give the focus time to apply
+                generate_keyboard_event('\ue010') # end
+                for _ in range(characterCount):
+                    generate_keyboard_event('\ue003') # backspace
+                break
+        if not processed:
+            raise RuntimeError("element's actions list didn't contain SetFocus. The element may be malformed")
+        return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
+
+
 @app.route('/session/<session_id>/appium/device/app_state', methods=['POST'])
 def session_appium_device_app_state(session_id):
     session = sessions[session_id]
@@ -729,6 +762,8 @@ def char_to_keyval(ch):
     keyval = Gdk.unicode_to_keyval(ord(ch))
     # I Don't know why this doesn't work, also doesn't work with \033 as input. :((
     # https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-24/gdk/gdkkeyuni.c
+    # Other useful resources:
+    # https://www.cl.cam.ac.uk/~mgk25/ucs/keysymdef.h
     if ch == "\uE00C":
         keyval = 0xff1b # escape
     elif ch == "\ue03d":
@@ -737,6 +772,10 @@ def char_to_keyval(ch):
         keyval = 0xff0d # return
     elif ch == "\ue007":
         keyval = 0xff8d # enter
+    elif ch == "\ue003":
+        keyval = 0xff08 # backspace
+    elif ch == "\ue010":
+        keyval = 0xff57 # end
     elif ch == "\ue012":
         keyval = 0xff51 # left
     elif ch == "\ue014":

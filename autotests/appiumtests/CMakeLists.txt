@@ -25,6 +25,12 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     )
 
     add_test(
+        NAME textinputtest
+        COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/textinputtest.py
+    )
+    set_tests_properties(textinputtest PROPERTIES TIMEOUT 15)
+
+    add_test(
         NAME screenshottest
         COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/screenshottest.py
     )
