@@ -9,6 +9,7 @@ Dependencies:
     'frameworks/kwayland': '@latest'
     'plasma/kwin': '@same'
     'plasma/kpipewire': '@same'
+    'third-party/wayland': '@latest'
 
 Options:
   require-passing-tests-on: [ 'Linux' ]
