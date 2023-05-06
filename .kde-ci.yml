@@ -7,9 +7,15 @@ Dependencies:
     'frameworks/extra-cmake-modules': '@latest'
     'frameworks/kwindowsystem': '@latest'
     'frameworks/kwayland': '@latest'
+    'third-party/wayland': '@latest'
+- 'on': ['suse_tumbleweed_qt65']
+  'require':
+    'plasma/kwin': '@same'
+    'plasma/kpipewire': '@same'
+- 'on': ['suse_tumbleweed_qt515']
+  'require':
     'plasma/kwin': 'Plasma/5.27'
     'plasma/kpipewire': 'Plasma/5.27'
-    'third-party/wayland': '@latest'
 
 Options:
   require-passing-tests-on: [ 'Linux' ]
