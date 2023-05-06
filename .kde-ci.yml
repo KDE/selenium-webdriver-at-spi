@@ -7,8 +7,8 @@ Dependencies:
     'frameworks/extra-cmake-modules': '@latest'
     'frameworks/kwindowsystem': '@latest'
     'frameworks/kwayland': '@latest'
-    'plasma/kwin': '@same'
-    'plasma/kpipewire': '@same'
+    'plasma/kwin': '@latest'
+    'plasma/kpipewire': '@latest'
     'third-party/wayland': '@latest'
 
 Options:
