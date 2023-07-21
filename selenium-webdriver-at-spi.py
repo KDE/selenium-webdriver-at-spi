@@ -413,6 +413,9 @@ def session_element_click(session_id, element_id):
     elif 'Toggle' in keys:
         print("actioning toggle")
         action.doAction(availableActions['Toggle'])
+    elif 'ShowMenu' in keys:
+        print("actioning showmenu")
+        action.doAction(availableActions['ShowMenu'])
     time.sleep(EVENTLOOP_TIME)
 
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
