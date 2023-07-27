@@ -7,6 +7,7 @@
 require 'fileutils'
 require 'logger'
 require 'shellwords'
+require 'tmpdir'
 
 def at_bus_exists?
   IO.popen(['dbus-send', '--print-reply=literal', '--dest=org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus.ListNames'], 'r') do |io|
@@ -209,12 +210,6 @@ if ENV['KDECI_BUILD'] == 'TRUE'
   ENV['QT_LOGGING_RULES'] = ENV['QT_LOGGING_RULES_OVERRIDE'] if ENV.include?('QT_LOGGING_RULES_OVERRIDE')
 end
 
-dbus_reexec!(logger: logger)
-kwin_reexec!
-if ENV['KDECI_BUILD'] == 'TRUE'
-  raise 'Failed to set dbus env' unless system('dbus-update-activation-environment', '--all')
-end
-
 logger.info 'Installing dependencies'
 datadir = File.absolute_path("#{__dir__}/../share/selenium-webdriver-at-spi/")
 if File.exist?("#{datadir}/requirements.txt")
@@ -223,31 +218,47 @@ if File.exist?("#{datadir}/requirements.txt")
 end
 
 ret = false
-ATSPIBus.new(logger: logger).with do
-  # Prevent a race condition in Qt when it tries to figure out the bus address,
-  # instead just tell it the address explicitly.
-  # https://codereview.qt-project.org/c/qt/qtbase/+/493700/2
-  ENV['AT_SPI_BUS_ADDRESS'] = at_bus_address
-  Recorder.with do
-    Driver.with(datadir) do
-      i = 0
-      begin
-        require 'net/http'
-        Net::HTTP.get(URI("http://localhost:#{PORT}/status"))
-      rescue => e
-        i += 1
-        if i < 30
-          logger.info 'not up yet'
-          sleep 0.5
-          retry
-        end
-        raise e
-      end
 
-      logger.info "starting test #{ARGV}"
-      IO.popen(ARGV, 'r', &:readlines)
-      ret = $?.success?
-      logger.info 'tests done'
+# create a throw-away XDG home, so the test starts with a clean slate
+# with every run, and doesn't mess with your local installation
+Dir.mktmpdir('selenium') do |xdg_home|
+  %w[CACHE CONFIG DATA STATE].each do |d|
+    Dir.mkdir("#{xdg_home}/#{d}")
+    ENV["XDG_#{d}_HOME"] = "#{xdg_home}/#{d}"
+  end
+
+  dbus_reexec!(logger: logger)
+  kwin_reexec!
+  if ENV['KDECI_BUILD'] == 'TRUE'
+    raise 'Failed to set dbus env' unless system('dbus-update-activation-environment', '--all')
+  end
+
+  ATSPIBus.new(logger: logger).with do
+    # Prevent a race condition in Qt when it tries to figure out the bus address,
+    # instead just tell it the address explicitly.
+    # https://codereview.qt-project.org/c/qt/qtbase/+/493700/2
+    ENV['AT_SPI_BUS_ADDRESS'] = at_bus_address
+    Recorder.with do
+      Driver.with(datadir) do
+        i = 0
+        begin
+          require 'net/http'
+          Net::HTTP.get(URI("http://localhost:#{PORT}/status"))
+        rescue => e
+          i += 1
+          if i < 30
+            logger.info 'not up yet'
+            sleep 0.5
+            retry
+          end
+          raise e
+        end
+
+        logger.info "starting test #{ARGV}"
+        IO.popen(ARGV, 'r', &:readlines)
+        ret = $?.success?
+        logger.info 'tests done'
+      end
     end
   end
 end
