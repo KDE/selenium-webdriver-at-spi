@@ -180,6 +180,8 @@ class Session:
                 # TODO raise if no context?
                 if self.browsing_context:
                     break
+            if not self.browsing_context:
+                print('Failed to find application on a11y bus!')
 
         context.connect("launched", on_launched)
 
