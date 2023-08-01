@@ -9,7 +9,7 @@ require 'logger'
 require 'shellwords'
 
 def at_bus_exists?
-  IO.popen(['dbus-send', '--print-reply', '--dest=org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus.ListNames'], 'r') do |io|
+  IO.popen(['dbus-send', '--print-reply=literal', '--dest=org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus.ListNames'], 'r') do |io|
     io.read.include?('"org.a11y.Bus"')
   end
 end
