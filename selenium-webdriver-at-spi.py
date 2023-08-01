@@ -34,7 +34,7 @@ from app_roles import ROLE_NAMES
 # https://github.com/microsoft/WinAppDriver/blob/master/Docs/SupportedAPIs.md
 # https://www.freedesktop.org/wiki/Accessibility/PyAtSpi2Example/
 
-EVENTLOOP_TIME = 0.5
+EVENTLOOP_TIME = 0.1
 sys.stdout = sys.stderr
 sessions = {} # global dict of open sessions
 
