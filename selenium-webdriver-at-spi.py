@@ -409,15 +409,19 @@ def session_element_click(session_id, element_id):
         action.doAction(availableActions['SetFocus'])
         time.sleep(EVENTLOOP_TIME)
 
-    if 'Press' in keys:
-        print("actioning press")
-        action.doAction(availableActions['Press'])
-    elif 'Toggle' in keys:
-        print("actioning toggle")
-        action.doAction(availableActions['Toggle'])
-    elif 'ShowMenu' in keys:
-        print("actioning showmenu")
-        action.doAction(availableActions['ShowMenu'])
+    try:
+        if 'Press' in keys:
+            print("actioning press")
+            action.doAction(availableActions['Press'])
+        elif 'Toggle' in keys:
+            print("actioning toggle")
+            action.doAction(availableActions['Toggle'])
+        elif 'ShowMenu' in keys:
+            print("actioning showmenu")
+            action.doAction(availableActions['ShowMenu'])
+    except gi.repository.GLib.GError as e:
+        print(e)
+        print("Ignoring! There is a chance your application is misbehaving. Could also just be a blocked eventloop though.")
     time.sleep(EVENTLOOP_TIME)
 
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
