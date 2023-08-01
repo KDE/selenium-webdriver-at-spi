@@ -176,7 +176,7 @@ class Driver
   def self.with(datadir, &block)
     pids = []
     env = { 'FLASK_ENV' => 'production', 'FLASK_APP' => 'selenium-webdriver-at-spi.py' }
-    env['GDK_BACKEND'] = "wayland" if ENV['KWIN_PID']
+    env['GDK_BACKEND'] = 'wayland' if ENV['KWIN_PID']
     pids << spawn(env,
                   'flask', 'run', '--port', PORT, '--no-reload',
                   chdir: datadir)
