@@ -14,6 +14,12 @@ def at_bus_exists?
   end
 end
 
+def at_bus_address
+  IO.popen(['dbus-send', '--print-reply=literal', '--dest=org.a11y.Bus', '/org/a11y/bus', 'org.a11y.Bus.GetAddress'], 'r') do |io|
+    io.read.strip
+  end
+end
+
 def terminate_pgids(pgids)
   (pgids || []).reverse.each do |pgid|
     Process.kill('-TERM', pgid)
@@ -218,6 +224,10 @@ end
 
 ret = false
 ATSPIBus.new(logger: logger).with do
+  # Prevent a race condition in Qt when it tries to figure out the bus address,
+  # instead just tell it the address explicitly.
+  # https://codereview.qt-project.org/c/qt/qtbase/+/493700/2
+  ENV['AT_SPI_BUS_ADDRESS'] = at_bus_address
   Recorder.with do
     Driver.with(datadir) do
       i = 0
