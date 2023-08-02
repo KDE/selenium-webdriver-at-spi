@@ -205,7 +205,7 @@ if ENV['KDECI_BUILD'] == 'TRUE'
     qt.qml.*=false;qt.qpa.wayland.*=false;qt.quick.dirty=false;qt.accessibility.cache=false;qt.v4.asm=false;
     qt.opengl.diskcache=false;qt.qpa.fonts=false;kf.kio.workers.http=false;
     qt.quick.*=false;qt.text.*=false;qt.qpa.input.methods=false;
-    qt.qpa.backingstore=false;qt.gui.*=false;
+    qt.qpa.backingstore=false;qt.gui.*=false;qt.core.plugin.loader=false;
   RULES
   ENV['QT_LOGGING_RULES'] = ENV['QT_LOGGING_RULES_OVERRIDE'] if ENV.include?('QT_LOGGING_RULES_OVERRIDE')
 end
