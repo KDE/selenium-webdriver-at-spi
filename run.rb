@@ -11,7 +11,7 @@ require 'tmpdir'
 
 def at_bus_exists?
   IO.popen(['dbus-send', '--print-reply=literal', '--dest=org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus.ListNames'], 'r') do |io|
-    io.read.include?('"org.a11y.Bus"')
+    io.read.include?('org.a11y.Bus')
   end
 end
 
