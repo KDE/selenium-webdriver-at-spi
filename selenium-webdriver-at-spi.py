@@ -171,7 +171,7 @@ class Session:
 
         self.launched = True
         end_time = datetime.now() + \
-            timedelta(milliseconds=self.timeouts['implicit'])
+            timedelta(milliseconds=(self.timeouts['implicit'] * 2))
 
         context = Gio.AppLaunchContext()
         context.setenv('QT_ACCESSIBILITY', '1')
