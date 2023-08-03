@@ -14,6 +14,7 @@ include(KDECompilerSettings)
 include(KDEClangFormat)
 include(KDEGitCommitHooks)
 include(CMakePackageConfigHelpers)
+include(FindPkgConfig)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -34,6 +35,15 @@ find_package(PlasmaWaylandProtocols REQUIRED)
 if (QT_MAJOR_VERSION EQUAL "5")
     find_package(QtWaylandScanner REQUIRED)
 endif()
+
+# Runtime Dependencies
+include(cmake/FindPythonModule.cmake)
+find_pythonmodule(flask)
+find_pythonmodule(pyatspi)
+find_pythonmodule(lxml)
+find_pythonmodule(gi)
+pkg_check_modules(GObjectIntrospection gobject-introspection-1.0)
+add_feature_info(GObjectIntrospection GObjectIntrospection_FOUND "required at runtime!")
 
 add_subdirectory(appidlister)
 add_subdirectory(screenshotter)
