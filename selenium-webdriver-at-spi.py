@@ -58,7 +58,7 @@ def status():
     return json.dumps(body), 200, {'content-type': 'application/json'}
 
 
-def _createNode2(accessible, parentElement, indexInParents = []):
+def _createNode2(accessible, parentElement, indexInParents=[]):
     if not accessible:
         return
     # A bit of aggressive filtering to not introspect chromium and firefox and the likes when using the desktop root.
@@ -80,7 +80,8 @@ def _createNode2(accessible, parentElement, indexInParents = []):
     # NB: pyatspi.getPath is bugged when the QObject has no QObject parent. Instead manually keep track of indexes.
     # while generating the xml.
     # path = pyatspi.getPath(accessible)
-    path_strs = [str(x) for x in indexInParents] # path is a list of ints for the indexes within the parents
+    # path is a list of ints for the indexes within the parents
+    path_strs = [str(x) for x in indexInParents]
     e.set("path", ' '.join(path_strs))
 
     states = []
@@ -124,7 +125,8 @@ class Session:
         self.elements = {}  # a cache to hold elements between finding and interacting with
         self.browsing_context = None
         self.pid = -1
-        self.timeouts = {'script': 30000, 'pageLoad': 300000, 'implicit': 5000} # implicit deviates from spec, 0 is unreasonable
+        # implicit deviates from spec, 0 is unreasonable
+        self.timeouts = {'script': 30000, 'pageLoad': 300000, 'implicit': 5000}
         self.launched = False
 
         blob = json.loads(request.data)
@@ -271,7 +273,7 @@ def session_source(session_id):
         return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
 
     doc = _createNode2(session.browsing_context, None)
-    return json.dumps({ 'value': etree.tostring(doc, pretty_print=False).decode("utf-8") }), 200, {'content-type': 'application/xml'}
+    return json.dumps({'value': etree.tostring(doc, pretty_print=False).decode("utf-8")}), 200, {'content-type': 'application/xml'}
 
 
 # NB: custom method to get the source without json wrapper
@@ -659,7 +661,7 @@ def session_appium_device_get_clipboard(session_id):
 
     # NOTE: need a window because on wayland we must be the active window to manipulate the clipboard (currently anyway)
     window = Gtk.Window()
-    window.set_default_size(20, 20);
+    window.set_default_size(20, 20)
     window.show()
     display = window.get_display()
     clipboard = Gtk.Clipboard.get_for_display(display, Gdk.SELECTION_CLIPBOARD)
@@ -692,7 +694,7 @@ def session_appium_device_set_clipboard(session_id):
 
     # NOTE: need a window because on wayland we must be the active window to manipulate the clipboard (currently anyway)
     window = Gtk.Window()
-    window.set_default_size(20, 20);
+    window.set_default_size(20, 20)
     display = window.get_display()
     clipboard = Gtk.Clipboard.get_for_display(display, Gdk.SELECTION_CLIPBOARD)
 
@@ -756,7 +758,8 @@ def session_appium_screenshot(session_id):
 
 
 def generate_keyboard_event(ch):
-    if 'KWIN_PID' in os.environ: # using a nested kwin. need to synthesize keys into wayland (not supported in atspi right now)
+    # using a nested kwin. need to synthesize keys into wayland (not supported in atspi right now)
+    if 'KWIN_PID' in os.environ:
         with tempfile.NamedTemporaryFile() as fp:
             keymap = keyval_to_keycode(char_to_keyval(ch))
             fp.write(json.dumps([
