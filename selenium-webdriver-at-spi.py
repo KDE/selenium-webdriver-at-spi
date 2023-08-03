@@ -6,13 +6,14 @@ from datetime import datetime, timedelta
 import tempfile
 import time
 import traceback
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import uuid
 import json
 import sys
 import os
 import signal
 import subprocess
+from werkzeug.exceptions import HTTPException
 
 import pyatspi
 from lxml import etree
@@ -46,6 +47,12 @@ pyatspi.setTimeout(4000, 15000)
 # Using flask because I know nothing about writing REST in python and it seemed the most straight-forward framework.
 app = Flask(__name__)
 
+@app.errorhandler(Exception)
+def unknown_error(e):
+    if isinstance(e, HTTPException):
+        return e
+
+    return errorFromException(error='unknown error', exception=e), 500
 
 @app.route('/status', methods=['GET'])
 def status():
@@ -100,12 +107,12 @@ def _createNode2(accessible, parentElement, indexInParents=[]):
         return e
 
 
-def errorFromMessage(code, error, message):
-    return json.dumps({'value': {'error': error, 'message': message}}), code, {'content-type': 'application/json'}
+def errorFromMessage(error, message):
+    return jsonify({'value': {'error': error, 'message': message}})
 
 
-def errorFromException(code, error, exception):
-    return json.dumps({'value': {'error': error, 'message': str(exception), 'stacktrace': traceback.format_exc()}}), code, {'content-type': 'application/json'}
+def errorFromException(error, exception):
+    return jsonify({'value': {'error': error, 'message': str(exception), 'stacktrace': traceback.format_exc()}})
 
 
 @app.route('/')
@@ -191,7 +198,7 @@ class Session:
                 if self.browsing_context:
                     break
             if not self.browsing_context:
-                raise 'Failed to find application on a11y bus within time limit!'
+                raise RuntimeError('Failed to find application on a11y bus within time limit!')
 
         context.connect("launched", on_launched)
 
@@ -224,13 +231,13 @@ def session():
         try:
             session = Session()
         except Exception as e:
-            return errorFromException(error='session not created', code=500, exception=e)
+            return errorFromException(error='session not created', exception=e), 500
         sessions[session.id] = session
         print(sessions)
 
         if session.browsing_context is None:
-            return errorFromMessage(error='session not created', code=500,
-                                    message='Application was not found on the a11y bus for unknown reasons. It probably failed to register on the bus.')
+            return errorFromMessage(error='session not created',
+                                    message='Application was not found on the a11y bus for unknown reasons. It probably failed to register on the bus.'), 500
 
         return json.dumps({'value': {'sessionId': session.id, 'capabilities': {"app": session.browsing_context.name}}}), 200, {'content-type': 'application/json'}
     elif request.method == 'GET':
