@@ -16,6 +16,30 @@ set_tests_properties(falsetest PROPERTIES
     WILL_FAIL TRUE
     ENVIRONMENT "TEST_WITH_KWIN_WAYLAND=0")
 
+add_test(
+    NAME screenshottest
+    COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/screenshottest.py
+)
+set_tests_properties(screenshottest PROPERTIES
+    TIMEOUT 60
+    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt${QT_MAJOR_VERSION}::qmake>/qml")
+
+add_test(
+    NAME textinputtest
+    COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/textinputtest.py
+)
+set_tests_properties(textinputtest PROPERTIES
+    TIMEOUT 60
+    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt${QT_MAJOR_VERSION}::qmake>/qml")
+
+add_test(
+    NAME valuetest
+    COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/valuetest.py
+)
+set_tests_properties(valuetest PROPERTIES
+    TIMEOUT 60
+    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt${QT_MAJOR_VERSION}::qmake>/qml")
+
 # These tests depend on actual applications and cannot be run by the CI currently. To enable them we'd need a way
 # to on-demand install "packages" outside the regular Dependencies system of .kde-ci.yml.
 if(NOT "$ENV{KDECI_BUILD}" STREQUAL "TRUE")

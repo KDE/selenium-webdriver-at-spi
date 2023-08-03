@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 
 # SPDX-License-Identifier: MIT
-# SPDX-FileCopyrightText: 2023 Harald Sitter <sitter@kde.org>
+# SPDX-FileCopyrightText: 2021-2023 Harald Sitter <sitter@kde.org>
 
 import os
 import unittest
 from appium import webdriver
+from appium.webdriver.common.appiumby import AppiumBy
 
-class ScreenshotTest(unittest.TestCase):
+class TextInputTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         desired_caps = {}
         # The app capability may be a command line or a desktop file id.
-        desired_caps["app"] = "org.kde.kcalc.desktop"
+        desired_caps["app"] = f"{os.getenv('QML_EXEC')} {os.path.dirname(os.path.realpath(__file__))}/textinput.qml"
         # Boilerplate, always the same
         self.driver = webdriver.Remote(
             command_executor='http://127.0.0.1:4723',
@@ -29,10 +30,11 @@ class ScreenshotTest(unittest.TestCase):
         self.driver.quit()
 
     def test_initialize(self):
-        self.assertIsNotNone(self.driver.get_screenshot_as_png())
-        self.driver.get_screenshot_as_file("appium_artifact_{}.png".format(self.id()))
-        st = os.stat("appium_artifact_{}.png".format(self.id()))
-        self.assertGreater(st.st_size, 1000)
+        slider = self.driver.find_element(AppiumBy.NAME, "input")
+        slider.send_keys("123")
+        self.assertEqual(slider.text, "123")
+        slider.clear()
+        self.assertEqual(slider.text, "")
 
 
 if __name__ == '__main__':

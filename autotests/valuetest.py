@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 
 # SPDX-License-Identifier: MIT
-# SPDX-FileCopyrightText: 2021-2023 Harald Sitter <sitter@kde.org>
+# SPDX-FileCopyrightText: 2021-2022 Harald Sitter <sitter@kde.org>
 
 import os
 import unittest
 from appium import webdriver
 from appium.webdriver.common.appiumby import AppiumBy
 
-class TextInputTest(unittest.TestCase):
+class ValueTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         desired_caps = {}
         # The app capability may be a command line or a desktop file id.
-        desired_caps["app"] = f"qml {os.path.dirname(os.path.realpath(__file__))}/textinput.qml"
+        desired_caps["app"] = f"{os.getenv('QML_EXEC')} {os.path.dirname(os.path.realpath(__file__))}/value.qml"
         # Boilerplate, always the same
         self.driver = webdriver.Remote(
             command_executor='http://127.0.0.1:4723',
@@ -30,11 +30,10 @@ class TextInputTest(unittest.TestCase):
         self.driver.quit()
 
     def test_initialize(self):
-        slider = self.driver.find_element(AppiumBy.NAME, "input")
-        slider.send_keys("123")
-        self.assertEqual(slider.text, "123")
-        slider.clear()
-        self.assertEqual(slider.text, "")
+        slider = self.driver.find_element(AppiumBy.NAME, "slider")
+        self.assertEqual(float(slider.get_attribute('value')), 25.0)
+        slider.set_value(100)
+        self.assertEqual(float(slider.get_attribute('value')), 100.0)
 
 
 if __name__ == '__main__':
