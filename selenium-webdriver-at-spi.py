@@ -5,6 +5,7 @@ import base64
 from datetime import datetime, timedelta
 import tempfile
 import time
+import traceback
 from flask import Flask, request
 import uuid
 import json
@@ -98,6 +99,14 @@ def _createNode2(accessible, parentElement, indexInParents = []):
         return e
 
 
+def errorFromMessage(code, error, message):
+    return json.dumps({'value': {'error': error, 'message': message}}), code, {'content-type': 'application/json'}
+
+
+def errorFromException(code, error, exception):
+    return json.dumps({'value': {'error': error, 'message': str(exception), 'stacktrace': traceback.format_exc()}}), code, {'content-type': 'application/json'}
+
+
 @app.route('/')
 def index():
     return 'Servas'
@@ -177,11 +186,10 @@ class Session:
                             continue
                     if self.browsing_context:
                         break
-                # TODO raise if no context?
                 if self.browsing_context:
                     break
             if not self.browsing_context:
-                print('Failed to find application on a11y bus!')
+                raise 'Failed to find application on a11y bus within time limit!'
 
         context.connect("launched", on_launched)
 
@@ -210,13 +218,17 @@ def session():
         # TODO:
         # https://www.w3.org/TR/webdriver1/#new-session
         # 1, 3, 4, 5, 8, 9, 11, 12, 13, 14
-        session = Session()
         print(request)
+        try:
+            session = Session()
+        except Exception as e:
+            return errorFromException(error='session not created', code=500, exception=e)
         sessions[session.id] = session
         print(sessions)
 
         if session.browsing_context is None:
-            return json.dumps({'value': {'error': 'session not created '}}), 500, {'content-type': 'application/json'}
+            return errorFromMessage(error='session not created', code=500,
+                                    message='Application was not found on the a11y bus for unknown reasons. It probably failed to register on the bus.')
 
         return json.dumps({'value': {'sessionId': session.id, 'capabilities': {"app": session.browsing_context.name}}}), 200, {'content-type': 'application/json'}
     elif request.method == 'GET':
