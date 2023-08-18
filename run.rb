@@ -214,7 +214,11 @@ logger.info 'Installing dependencies'
 datadir = File.absolute_path("#{__dir__}/../share/selenium-webdriver-at-spi/")
 if File.exist?("#{datadir}/requirements.txt")
   raise 'pip3 not found in PATH!' unless system('which', 'pip3')
-  raise 'Failed to run pip3 install!' unless system('pip3', 'install', '-r', 'requirements.txt', chdir: datadir)
+  unless system('pip3', 'install', '-r', 'requirements.txt', chdir: datadir)
+    unless system('pip3', 'install', '--break-system-packages', '-r', 'requirements.txt', chdir: datadir)
+      raise 'Failed to run pip3 install!'
+    end
+  end
 
   ENV['PATH'] = "#{Dir.home}/.local/bin:#{ENV.fetch('PATH')}"
 end
