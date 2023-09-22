@@ -141,6 +141,7 @@ class Session:
         # TODO the blob from ruby is much more complicated god only knows why
         desired_app = None
         desired_timeouts = None
+        desired_environ = None
         if 'desiredCapabilities' in blob:
             if 'app' in blob['desiredCapabilities']:
                 desired_app = blob['desiredCapabilities']['app']
@@ -148,6 +149,8 @@ class Session:
                 desired_app = blob['desiredCapabilities']['appium:app']
             if 'timeouts' in blob['desiredCapabilities']:
                 desired_timeouts = blob['desiredCapabilities']['timeouts']
+            if 'appium:environ' in blob['desiredCapabilities']:
+                desired_environ = blob['desiredCapabilities']['appium:environ']
         else:
             if 'app' in blob['capabilities']['alwaysMatch']:
                 desired_app = blob['capabilities']['alwaysMatch']['app']
@@ -155,6 +158,8 @@ class Session:
                 desired_app = blob['capabilities']['alwaysMatch']['appium:app']
             if 'timeouts' in blob['capabilities']['alwaysMatch']:
                 desired_timeouts = blob['capabilities']['alwaysMatch']['timeouts']
+            if 'appium:environ' in blob['capabilities']['alwaysMatch']:
+                desired_environ = blob['capabilities']['alwaysMatch']['appium:environ']
 
         if desired_timeouts:
             if 'script' in desired_timeouts:
@@ -177,6 +182,9 @@ class Session:
         context.setenv('QT_ACCESSIBILITY', '1')
         context.setenv('QT_LINUX_ACCESSIBILITY_ALWAYS_ON', '1')
         context.setenv('KIO_DISABLE_CACHE_CLEANER', '1')  # don't dangle
+        if isinstance(desired_environ, dict):
+            for key, value in desired_environ.items():
+                context.setenv(key, value)
 
         def on_launched(context, info, platform_data):
             self.pid = platform_data['pid']
