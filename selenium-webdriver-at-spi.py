@@ -503,6 +503,9 @@ def session_element_attribute(session_id, element_id, name):
     if name == "accessibility-id":
         return json.dumps({'value': element.accessibleId}), 200, {'content-type': 'application/json'}
 
+    if name == "name":
+        return json.dumps({'value': element.name}), 200, {'content-type': 'application/json'}
+
     if name == "value":
         elementValue = element.queryValue()
         return json.dumps({'value': elementValue.currentValue}), 200, {'content-type': 'application/json'}
