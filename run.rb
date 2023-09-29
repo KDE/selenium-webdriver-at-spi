@@ -212,7 +212,8 @@ end
 
 logger.info 'Installing dependencies'
 datadir = File.absolute_path("#{__dir__}/../share/selenium-webdriver-at-spi/")
-if File.exist?("#{datadir}/requirements.txt")
+requirements_installed_marker = "#{Dir.tmpdir}/selenium-requirements-installed"
+if !File.exist?(requirements_installed_marker) && File.exist?("#{datadir}/requirements.txt")
   raise 'pip3 not found in PATH!' unless system('which', 'pip3')
   unless system('pip3', 'install', '-r', 'requirements.txt', chdir: datadir)
     unless system('pip3', 'install', '--break-system-packages', '-r', 'requirements.txt', chdir: datadir)
@@ -220,8 +221,14 @@ if File.exist?("#{datadir}/requirements.txt")
     end
   end
 
-  ENV['PATH'] = "#{Dir.home}/.local/bin:#{ENV.fetch('PATH')}"
+  if ENV['KDECI_BUILD'] == 'TRUE'
+    File.open(requirements_installed_marker, "w") do |file|
+      # create an empty file so tests in the same CI container can skip the process
+    end
+  end
 end
+
+ENV['PATH'] = "#{Dir.home}/.local/bin:#{ENV.fetch('PATH')}"
 
 ret = false
 
