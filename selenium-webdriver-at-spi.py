@@ -742,9 +742,9 @@ def session_appium_element_value(session_id, element_id):
         return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
 
     blob = json.loads(request.data)
-    print(blob)
+    print("blob:", blob)
     print(element)
-    value = blob['value'][0]
+    value = blob['text']
 
     try:
         valueElement = element.queryValue()

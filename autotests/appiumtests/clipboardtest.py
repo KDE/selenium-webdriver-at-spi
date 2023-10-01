@@ -5,16 +5,17 @@
 
 import unittest
 from appium import webdriver
+from appium.options.common.base import AppiumOptions
+
 
 class SimpleCalculatorTests(unittest.TestCase):
+
     @classmethod
     def setUpClass(self):
-        desired_caps = {}
+        options = AppiumOptions()
         # unused actually but need one so the driver is happy
-        desired_caps["app"] = "org.kde.kcalc.desktop"
-        self.driver = webdriver.Remote(
-            command_executor='http://127.0.0.1:4723',
-            desired_capabilities=desired_caps)
+        options.set_capability("app", "org.kde.kcalc.desktop")
+        self.driver = webdriver.Remote(command_executor='http://127.0.0.1:4723', options=options)
 
     @classmethod
     def tearDownClass(self):
@@ -25,6 +26,7 @@ class SimpleCalculatorTests(unittest.TestCase):
         self.driver.set_clipboard_text("asdf")
         text = self.driver.get_clipboard_text()
         self.assertEqual(text, "asdf")
+
 
 if __name__ == '__main__':
     unittest.main()

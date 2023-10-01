@@ -7,19 +7,20 @@
 import unittest
 from appium import webdriver
 from appium.webdriver.common.appiumby import AppiumBy
+from appium.options.common.base import AppiumOptions
 import selenium.common.exceptions
 from selenium.webdriver.support.ui import WebDriverWait
 
+
 class SimpleCalculatorTests(unittest.TestCase):
+
     @classmethod
     def setUpClass(self):
-        desired_caps = {}
+        options = AppiumOptions()
         # The app capability may be a command line or a desktop file id.
-        desired_caps["app"] = "org.kde.kcalc.desktop"
+        options.set_capability("app", "org.kde.kcalc.desktop")
         # Boilerplate, always the same
-        self.driver = webdriver.Remote(
-            command_executor='http://127.0.0.1:4723',
-            desired_capabilities=desired_caps)
+        self.driver = webdriver.Remote(command_executor='http://127.0.0.1:4723', options=options)
         # Set a timeout for waiting to find elements. If elements cannot be found
         # in time we'll get a test failure. This should be somewhat long so as to
         # not fall over when the system is under load, but also not too long that
@@ -70,7 +71,7 @@ class SimpleCalculatorTests(unittest.TestCase):
         self.driver.find_element(by=AppiumBy.NAME, value="÷").click()
         self.driver.find_element(by=AppiumBy.NAME, value="8").click()
         self.driver.find_element(by=AppiumBy.NAME, value="=").click()
-        self.assertResult(self.getresults(),"8")
+        self.assertResult(self.getresults(), "8")
 
     def test_division(self):
         # Using find element by name twice risks the driver finding the
@@ -99,6 +100,7 @@ class SimpleCalculatorTests(unittest.TestCase):
         self.driver.find_element(by=AppiumBy.NAME, value="1").click()
         self.driver.find_element(by=AppiumBy.NAME, value="=").click()
         self.assertResult(self.getresults(), "8")
+
 
 if __name__ == '__main__':
     unittest.main()
