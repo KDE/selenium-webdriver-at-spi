@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
 // SPDX-FileCopyrightText: 2023 Harald Sitter <sitter@kde.org>
 
+#include "qwayland-fake-input.h"
 #include <QDebug>
 #include <QFile>
 #include <QGuiApplication>
@@ -8,17 +9,16 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QThread>
+#include <QWaylandClientExtensionTemplate>
+#include <qpa/qplatformnativeinterface.h>
 
-#include <KWayland/Client/connection_thread.h>
-#include <KWayland/Client/fakeinput.h>
-#include <KWayland/Client/registry.h>
+#include <wayland-client-protocol.h>
 
 namespace
 {
 constexpr auto KEY_LEFTSHIFT = 42;
 constexpr auto KEY_LEFTALT = 56;
 constexpr auto KEY_LEFTCTRL = 29;
-constexpr auto sleepTimeMs = 50;
 
 struct KeyboardAction
 {
@@ -55,7 +55,61 @@ struct KeyboardAction
 };
 
 QList<KeyboardAction> actions;
+
+class FakeInputInterface : public QWaylandClientExtensionTemplate<FakeInputInterface>, public QtWayland::org_kde_kwin_fake_input
+{
+public:
+    FakeInputInterface()
+        : QWaylandClientExtensionTemplate<FakeInputInterface>(ORG_KDE_KWIN_FAKE_INPUT_DESTROY_SINCE_VERSION)
+    {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+        initialize();
+        QMetaObject::invokeMethod(this, &FakeInputInterface::sendKey, Qt::QueuedConnection);
+#else
+        connect(this, &FakeInputInterface::activeChanged, this, &FakeInputInterface::sendKey);
+#endif
+    }
+
+    ~FakeInputInterface()
+    {
+        destroy();
+    }
+
+    Q_DISABLE_COPY_MOVE(FakeInputInterface)
+
+private Q_SLOTS:
+    void sendKey();
+};
 } // namespace
+
+void FakeInputInterface::sendKey()
+{
+    authenticate(QStringLiteral("inputsynth"), QStringLiteral("hello"));
+    auto display = static_cast<struct wl_display *>(qGuiApp->platformNativeInterface()->nativeResourceForIntegration("wl_display"));
+    wl_display_roundtrip(display);
+
+    for (const auto &action : actions) {
+        for (const auto &modifier : action.linuxModifiers()) {
+            qDebug() << "  pressing modifier" << modifier;
+            keyboard_key(modifier, WL_KEYBOARD_KEY_STATE_PRESSED);
+            wl_display_roundtrip(display);
+        }
+
+        qDebug() << "    pressing key" << action.linuxKeyCode();
+        keyboard_key(action.linuxKeyCode(), WL_KEYBOARD_KEY_STATE_PRESSED);
+        wl_display_roundtrip(display);
+        keyboard_key(action.linuxKeyCode(), WL_KEYBOARD_KEY_STATE_RELEASED);
+        wl_display_roundtrip(display);
+
+        for (const auto &modifier : action.linuxModifiers()) {
+            qDebug() << "  releasing modifier" << modifier;
+            keyboard_key(modifier, WL_KEYBOARD_KEY_STATE_RELEASED);
+            wl_display_roundtrip(display);
+        }
+    }
+
+    qGuiApp->quit();
+}
 
 int main(int argc, char **argv)
 {
@@ -76,51 +130,10 @@ int main(int argc, char **argv)
             qWarning() << "unsupported action type" << jsonAction;
             return 1;
         }
-        actions.push_back({.level=hash.value(QStringLiteral("level")).toUInt(), .keycode = hash.value(QStringLiteral("keycode")).toUInt()});
+        actions.push_back({.level = hash.value(QStringLiteral("level")).toUInt(), .keycode = hash.value(QStringLiteral("keycode")).toUInt()});
     }
 
-    std::unique_ptr<KWayland::Client::ConnectionThread> connection(
-        KWayland::Client::ConnectionThread::fromApplication());
-    if (!connection) {
-        qWarning() << "no connection";
-        return 1;
-    }
-
-    KWayland::Client::Registry registry;
-    registry.create(connection.get());
-
-    std::unique_ptr<KWayland::Client::FakeInput> input;
-    QObject::connect(&registry,
-                     &KWayland::Client::Registry::fakeInputAnnounced,
-                     &registry,
-                     [&registry, &input](quint32 name, quint32 version) {
-                         input.reset(registry.createFakeInput(name, version));
-                         input->authenticate(QStringLiteral("inputsynth"), QStringLiteral("hello"));
-
-                         for (const auto &action : actions) {
-                             for (const auto &modifier : action.linuxModifiers()) {
-                                 qDebug() << "  pressing modifier" << modifier;
-                                 input->requestKeyboardKeyPress(modifier);
-                                 QThread::msleep(sleepTimeMs);
-                             }
-
-                             qDebug() << "    pressing key" << action.linuxKeyCode();
-                             input->requestKeyboardKeyPress(action.linuxKeyCode());
-                             QThread::msleep(sleepTimeMs);
-                             input->requestKeyboardKeyRelease(action.linuxKeyCode());
-                             QThread::msleep(sleepTimeMs);
-
-                             for (const auto &modifier : action.linuxModifiers()) {
-                                 qDebug() << "  releasing modifier" << modifier;
-                                 input->requestKeyboardKeyRelease(modifier);
-                                 QThread::msleep(sleepTimeMs);
-                             }
-                        }
-
-                         qGuiApp->quit();
-                     });
-
-    registry.setup();
+    auto input = std::make_unique<FakeInputInterface>();
 
     return app.exec();
 }
