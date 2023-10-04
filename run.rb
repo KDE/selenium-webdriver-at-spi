@@ -27,6 +27,8 @@ def terminate_pgids(pgids)
     Process.waitpid(pgid)
   rescue Errno::ECHILD => e
     warn "Process group not found #{e}"
+  rescue Errno::ESRCH => e
+    warn "Process not found #{e}"
   end
 end
 
