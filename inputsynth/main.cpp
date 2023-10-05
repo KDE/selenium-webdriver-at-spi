@@ -10,7 +10,9 @@
 #include <QJsonObject>
 #include <QThread>
 #include <QWaylandClientExtensionTemplate>
+#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
 #include <qpa/qplatformnativeinterface.h>
+#endif
 
 #include <wayland-client-protocol.h>
 
@@ -85,7 +87,11 @@ private Q_SLOTS:
 void FakeInputInterface::sendKey()
 {
     authenticate(QStringLiteral("inputsynth"), QStringLiteral("hello"));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    auto display = qGuiApp->nativeInterface<QNativeInterface::QWaylandApplication>()->display();
+#else
     auto display = static_cast<struct wl_display *>(qGuiApp->platformNativeInterface()->nativeResourceForIntegration("wl_display"));
+#endif
     wl_display_roundtrip(display);
 
     for (const auto &action : actions) {

@@ -10,6 +10,9 @@ if(QT_MAJOR_VERSION EQUAL "5")
         PROTOCOL ${PLASMA_WAYLAND_PROTOCOLS_DIR}/fake-input.xml
         BASENAME fake-input
     )
+    target_link_libraries(selenium-webdriver-at-spi-inputsynth
+        Qt::GuiPrivate # QPlatformNativeInterface
+    )
 else()
     qt6_generate_wayland_protocol_client_sources(selenium-webdriver-at-spi-inputsynth FILES ${PLASMA_WAYLAND_PROTOCOLS_DIR}/fake-input.xml)
 endif()
@@ -17,7 +20,6 @@ endif()
 target_link_libraries(selenium-webdriver-at-spi-inputsynth
     Qt::Core
     Qt::Gui
-    Qt::GuiPrivate
     Qt::WaylandClient # Fake input protocol
     Wayland::Client
 )
