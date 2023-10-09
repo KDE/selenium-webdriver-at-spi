@@ -46,6 +46,10 @@ find_pythonmodule(gi)
 pkg_check_modules(GObjectIntrospection gobject-introspection-1.0)
 add_feature_info(GObjectIntrospection GObjectIntrospection_FOUND "required at runtime!")
 
+set_package_properties(PkgConfig PROPERTIES TYPE REQUIRED)
+pkg_check_modules(xkbcommon xkbcommon REQUIRED IMPORTED_TARGET)
+set_package_properties(xkbcommon PROPERTIES TYPE REQUIRED)
+
 add_subdirectory(appidlister)
 add_subdirectory(screenshotter)
 add_subdirectory(autotests)

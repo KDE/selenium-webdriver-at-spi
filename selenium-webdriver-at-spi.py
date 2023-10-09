@@ -571,8 +571,7 @@ def session_element_value(session_id, element_id):
                 processed = True
                 action.doAction(i)
                 time.sleep(EVENTLOOP_TIME) # give the focus time to apply
-                for ch in text:
-                    generate_keyboard_event(ch)
+                generate_keyboard_event_text(text)
                 break
         if not processed:
             raise RuntimeError("element's actions list didn't contain SetFocus. The element may be malformed")
@@ -603,9 +602,12 @@ def session_element_clear(session_id, element_id):
                 processed = True
                 action.doAction(i)
                 time.sleep(EVENTLOOP_TIME) # give the focus time to apply
-                generate_keyboard_event('\ue010') # end
+
+                pseudo_text = ''
+                pseudo_text += '\ue010' # end
                 for _ in range(characterCount):
-                    generate_keyboard_event('\ue003') # backspace
+                    pseudo_text += '\u0008' # backspace
+                generate_keyboard_event_text(pseudo_text)
                 break
         if not processed:
             raise RuntimeError("element's actions list didn't contain SetFocus. The element may be malformed")
@@ -664,8 +666,8 @@ def session_appium_device_press_keycode(session_id):
     # Not doing anything with these for now
     # metastate = blob['metastate']
     # flags = blob['flags']
-    for ch in keycode:
-        generate_keyboard_event(ch)
+    # FIXME needs testing
+    generate_keyboard_event_text(keycode)
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
@@ -773,28 +775,27 @@ def session_appium_screenshot(session_id):
 
     return json.dumps({'value': out.decode('utf-8')}), 200, {'content-type': 'application/json'}
 
-
-def generate_keyboard_event(ch):
+def generate_keyboard_event_text(text):
     # using a nested kwin. need to synthesize keys into wayland (not supported in atspi right now)
     if 'KWIN_PID' in os.environ:
         with tempfile.NamedTemporaryFile() as fp:
-            keymap = keyval_to_keycode(char_to_keyval(ch))
-            fp.write(json.dumps([
-                {'type': 'keyboard', 'level': keymap.level, 'keycode': keymap.keycode}
-            ]).encode())
+            actions = []
+            for ch in text:
+                actions.append({'type': 'keyboard', 'key': ch})
+            fp.write(json.dumps(actions).encode())
             fp.flush()
             subprocess.run(["selenium-webdriver-at-spi-inputsynth", fp.name])
-        time.sleep(EVENTLOOP_TIME)
     else:
-        pyatspi.Registry.generateKeyboardEvent(char_to_keyval(ch), None, pyatspi.KEY_SYM)
-        time.sleep(EVENTLOOP_TIME)
-
+        for ch in text:
+            pyatspi.Registry.generateKeyboardEvent(char_to_keyval(ch), None, pyatspi.KEY_SYM)
+            time.sleep(EVENTLOOP_TIME)
 
 def keyval_to_keycode(keyval):
     keymap = Gdk.Keymap.get_default()
     ret, keys = keymap.get_entries_for_keyval(keyval)
     if not ret:
         raise RuntimeError("Failed to map key!")
+    # FIXME layout 0 is not necessarily the current one (e.g. in the kcm we can configure multiple layouts)
     return keys[0]
 
 

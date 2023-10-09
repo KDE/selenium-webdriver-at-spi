@@ -99,6 +99,11 @@ def kwin_reexec!
     ENV['KWIN_SCREENSHOT_NO_PERMISSION_CHECKS'] = '1'
     ENV['KWIN_WAYLAND_NO_PERMISSION_CHECKS'] = '1'
     ENV['KWIN_PID'] = pid.to_s
+    ENV['KWIN_XKB_DEFAULT_KEYMAP'] = 'true'
+    # Don't set RULES or MODEL, they ought to be valid and we probably don't need to change them from whatever is set!
+    ENV['XKB_DEFAULT_LAYOUT'] = 'us'
+    ENV['XKB_DEFAULT_VARIANT'] = ''
+    ENV['XKB_DEFAULT_OPTIONS'] = ''
     extra_args = []
     extra_args << '--virtual' if ENV['LIBGL_ALWAYS_SOFTWARE']
     extra_args << '--xwayland' if ENV.fetch('TEST_WITH_XWAYLAND', '0').to_i.positive?

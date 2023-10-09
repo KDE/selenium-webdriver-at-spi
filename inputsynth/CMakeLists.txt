@@ -21,6 +21,8 @@ target_link_libraries(selenium-webdriver-at-spi-inputsynth
     Qt::Core
     Qt::Gui
     Qt::WaylandClient # Fake input protocol
+    Qt::DBus
     Wayland::Client
+    PkgConfig::xkbcommon
 )
 install(TARGETS selenium-webdriver-at-spi-inputsynth ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})

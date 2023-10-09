@@ -31,11 +31,11 @@ class TextInputTest(unittest.TestCase):
         self.driver.quit()
 
     def test_initialize(self):
-        slider = self.driver.find_element(AppiumBy.NAME, "input")
-        slider.send_keys("123")
-        self.assertEqual(slider.text, "123")
-        slider.clear()
-        self.assertEqual(slider.text, "")
+        element = self.driver.find_element(AppiumBy.NAME, "input")
+        element.send_keys("1;{)!#@")
+        self.assertEqual(element.text, "1;{)!#@")
+        element.clear()
+        self.assertEqual(element.text, "")
 
 
 if __name__ == '__main__':
