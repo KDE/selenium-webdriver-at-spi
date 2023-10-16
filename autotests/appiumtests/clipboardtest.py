@@ -27,6 +27,10 @@ class SimpleCalculatorTests(unittest.TestCase):
         text = self.driver.get_clipboard_text()
         self.assertEqual(text, "asdf")
 
+        self.driver.set_clipboard_text("qwer")
+        text = self.driver.get_clipboard_text()
+        self.assertEqual(text, "qwer")
+
 
 if __name__ == '__main__':
     unittest.main()

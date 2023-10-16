@@ -37,6 +37,7 @@ from app_roles import ROLE_NAMES
 # https://www.freedesktop.org/wiki/Accessibility/PyAtSpi2Example/
 
 EVENTLOOP_TIME = 0.1
+EVENTLOOP_TIME_LONG = 0.5
 sys.stdout = sys.stderr
 sessions = {} # global dict of open sessions
 
@@ -684,11 +685,7 @@ def session_appium_device_get_clipboard(session_id):
     display = window.get_display()
     clipboard = Gtk.Clipboard.get_for_display(display, Gdk.SELECTION_CLIPBOARD)
 
-    context = GLib.MainContext.default()
-    for _ in range(4):
-        time.sleep(0.5)
-        while context.pending():
-            context.iteration(may_block=False)
+    spin_glib_main_context()
 
     data = None
     if contentType == 'plaintext':
@@ -697,6 +694,9 @@ def session_appium_device_get_clipboard(session_id):
         raise 'content type not currently supported'
 
     window.close()
+
+    spin_glib_main_context()
+
     return json.dumps({'value': base64.b64encode(data.encode('utf-8')).decode('utf-8')}), 200, {'content-type': 'application/json'}
 
 
@@ -721,13 +721,12 @@ def session_appium_device_set_clipboard(session_id):
     else:
         raise 'content type not currently supported'
 
-    context = GLib.MainContext.default()
-    for _ in range(4):
-        time.sleep(0.5)
-        while context.pending():
-            context.iteration(may_block=False)
+    spin_glib_main_context()
 
     window.close()
+
+    spin_glib_main_context()
+
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
@@ -831,3 +830,11 @@ def char_to_keyval(ch):
     print(ord(ch))
     print(hex(keyval))
     return keyval
+
+
+def spin_glib_main_context(repeat: int = 4):
+    context = GLib.MainContext.default()
+    for _ in range(repeat):
+        time.sleep(EVENTLOOP_TIME_LONG)
+        while context.pending():
+            context.iteration(may_block=False)
