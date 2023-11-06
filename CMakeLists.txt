@@ -26,7 +26,8 @@ find_package(Qt${QT_MAJOR_VERSION} ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS 
 if(QT_MAJOR_VERSION EQUAL "5")
     find_package(KF5 5.99 REQUIRED COMPONENTS WindowSystem Wayland CoreAddons)
 else()
-    find_package(KF6 5.240 REQUIRED COMPONENTS WindowSystem Wayland CoreAddons)
+    find_package(KF6 5.240 REQUIRED COMPONENTS WindowSystem CoreAddons)
+    find_package(KF6Wayland REQUIRED)
 endif()
 
 find_package(KPipeWire REQUIRED)
