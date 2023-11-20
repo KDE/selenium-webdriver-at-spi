@@ -671,6 +671,25 @@ def session_appium_device_press_keycode(session_id):
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
+@app.route('/session/<session_id>/actions', methods=['POST'])
+def session_actions(session_id):
+    session = sessions[session_id]
+    if not session:
+        return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    blob = json.loads(request.data)
+
+    if 'KWIN_PID' in os.environ:
+        with tempfile.NamedTemporaryFile() as file:
+            file.write(request.data)
+            file.flush()
+            subprocess.run(["selenium-webdriver-at-spi-inputsynth", file.name])
+    else:
+        raise RuntimeError("actions only work with nested kwin!")
+
+    return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
+
+
 @app.route('/session/<session_id>/appium/device/get_clipboard', methods=['POST'])
 def session_appium_device_get_clipboard(session_id):
     session = sessions[session_id]
@@ -781,8 +800,10 @@ def generate_keyboard_event_text(text):
         with tempfile.NamedTemporaryFile() as fp:
             actions = []
             for ch in text:
-                actions.append({'type': 'keyboard', 'key': ch})
-            fp.write(json.dumps(actions).encode())
+                actions.append({'type': 'keyDown', 'value': ch})
+                actions.append({'type': 'keyUp', 'value': ch})
+            print({'actions': {'type': 'key', 'id': 'key', 'actions': actions}})
+            fp.write(json.dumps({'actions': [{'type': 'key', 'id': 'key', 'actions': actions}]}).encode())
             fp.flush()
             subprocess.run(["selenium-webdriver-at-spi-inputsynth", fp.name])
     else:

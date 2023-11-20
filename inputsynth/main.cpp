@@ -205,6 +205,9 @@ class KeyboardAction
         if (key == QChar(u'\ue009')) {
             return XKB_KEY_Control_L;
         }
+        if (key == QChar(u'\ue007')) {
+            return XKB_KEY_Return;
+        }
 
         return xkb_utf32_to_keysym(key.unicode());
     }
@@ -225,6 +228,8 @@ class KeyboardAction
     QMap<uint, QList<xkb_keycode_t>> m_modifierSymToCodes;
     QMap<QString, uint> m_modifierNameToSym;
 
+    wl_keyboard_key_state m_keyState;
+
 public:
     /**
      * @brief Construct a new Keyboard Action object
@@ -242,7 +247,7 @@ public:
      * XKB resolution entails iterating all levels in all keycodes to look at all keysyms and eventually find the one
      * we are looking for. It's a bit verbose but it is what it is.
      */
-    explicit KeyboardAction(const QChar &key)
+    explicit KeyboardAction(const QChar &key, wl_keyboard_key_state keyState)
         : m_keysym(charToKeysym(key))
         , m_context(xkb_context_new(XKB_CONTEXT_NO_FLAGS))
         , m_ruleNames({.rules = nullptr, .model = nullptr, .layout = defaultLayout().constData(), .variant = nullptr, .options = nullptr})
@@ -250,6 +255,7 @@ public:
         , m_state(xkb_state_new(m_keymap.get()))
         , m_layout(xkb_state_serialize_layout(m_state.get(), XKB_STATE_LAYOUT_EFFECTIVE))
         , m_modCount(xkb_keymap_num_mods(m_keymap.get()))
+        , m_keyState(keyState)
     {
         Q_ASSERT(!defaultLayout().isEmpty());
         Q_ASSERT(m_keysym != XKB_KEY_NoSymbol);
@@ -284,6 +290,11 @@ public:
     [[nodiscard]] quint32 linuxKeyCode() const
     {
         return m_keycode;
+    }
+
+    [[nodiscard]] wl_keyboard_key_state keyState() const
+    {
+        return m_keyState;
     }
 
     [[nodiscard]] std::vector<quint32> linuxModifiers() const
@@ -350,10 +361,8 @@ private Q_SLOTS:
                 wl_display_roundtrip(display);
             }
 
-            qDebug() << "    pressing key" << action.linuxKeyCode();
-            keyboard_key(action.linuxKeyCode(), WL_KEYBOARD_KEY_STATE_PRESSED);
-            wl_display_roundtrip(display);
-            keyboard_key(action.linuxKeyCode(), WL_KEYBOARD_KEY_STATE_RELEASED);
+            qDebug() << "    key (state)" << action.linuxKeyCode() << action.keyState();
+            keyboard_key(action.linuxKeyCode(), action.keyState());
             wl_display_roundtrip(display);
 
             for (const auto &modifier : action.linuxModifiers()) {
@@ -385,17 +394,34 @@ int main(int argc, char **argv)
 
     std::vector<KeyboardAction> actions;
 
-    const auto document = QJsonDocument::fromJson(actionFile.readAll());
-    const auto jsonActions = document.array();
-    for (const auto &jsonAction : jsonActions) {
-        const auto hash = jsonAction.toObject().toVariantHash();
-        if (hash.value(QStringLiteral("type")).toString() != QStringLiteral("keyboard")) {
-            qWarning() << "unsupported action type" << jsonAction;
-            return 1;
+    auto typeToKeyState = [](const QVariantHash &hash) -> std::optional<wl_keyboard_key_state> {
+        const auto type = hash.value(QStringLiteral("type")).toString();
+        if (type == QStringLiteral("keyDown")) {
+            return WL_KEYBOARD_KEY_STATE_PRESSED;
         }
-        const auto string = hash.value(QStringLiteral("key")).toString();
-        const QChar *character = string.unicode();
-        actions.emplace_back(*character);
+        if (type == QStringLiteral("keyUp")) {
+            return WL_KEYBOARD_KEY_STATE_RELEASED;
+        }
+        qWarning() << "unsupported keyboard action type" << type;
+        qApp->quit();
+        return {};
+    };
+
+    const auto document = QJsonDocument::fromJson(actionFile.readAll());
+    const auto jsonObject = document.object();
+    const auto jsonActions = jsonObject.value(QStringLiteral("actions")).toArray();
+    for (const auto &jsonActionSet : jsonActions) {
+        if (jsonActionSet[QStringLiteral("type")] != QStringLiteral("key")) {
+            qWarning() << "unsupported action type" << jsonActionSet;
+            continue;
+        }
+        for (const auto &jsonAction : jsonActionSet[QStringLiteral("actions")].toArray())  {
+            const auto hash = jsonAction.toObject().toVariantHash();
+
+            const auto string = hash.value(QStringLiteral("value")).toString();
+            const QChar *character = string.unicode();
+            actions.emplace_back(*character, typeToKeyState(hash).value_or(WL_KEYBOARD_KEY_STATE_RELEASED));
+        }
     }
 
     FakeInputInterface input(std::move(actions));

@@ -8,6 +8,7 @@ import unittest
 from appium import webdriver
 from appium.options.common.base import AppiumOptions
 from appium.webdriver.common.appiumby import AppiumBy
+from selenium.webdriver.common.action_chains import ActionChains
 
 
 class TextInputTest(unittest.TestCase):
@@ -33,6 +34,12 @@ class TextInputTest(unittest.TestCase):
     def test_initialize(self):
         element = self.driver.find_element(AppiumBy.NAME, "input")
         element.send_keys("1;{)!#@")
+        self.assertEqual(element.text, "1;{)!#@")
+        element.clear()
+        self.assertEqual(element.text, "")
+
+        # element implicitly has focus right now, test that we can just type globally
+        ActionChains(self.driver).send_keys("1;{)!#@").perform()
         self.assertEqual(element.text, "1;{)!#@")
         element.clear()
         self.assertEqual(element.text, "")
