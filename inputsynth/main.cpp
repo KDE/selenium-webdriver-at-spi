@@ -199,14 +199,40 @@ class KeyboardAction
     xkb_keysym_t charToKeysym(const QChar &key)
     {
         // A bit awkward but not all keys manage to map via xkb_utf32_to_keysym so we augment the lookup.
-        if (key == QChar(u'\ue010')) {
-            return XKB_KEY_End;
-        }
-        if (key == QChar(u'\ue009')) {
-            return XKB_KEY_Control_L;
-        }
-        if (key == QChar(u'\ue007')) {
-            return XKB_KEY_Return;
+        // https://www.selenium.dev/selenium/docs/api/py/webdriver/selenium.webdriver.common.keys.html#selenium.webdriver.common.keys.Keys.ARROW_LEFT
+        static const QHash<QChar, xkb_keysym_t> charToKeyMap{
+            {QChar(u'\ue025'), XKB_KEY_plus},      {QChar(u'\ue00a'), XKB_KEY_Alt_L},
+            {QChar(u'\ue015'), XKB_KEY_Down},      {QChar(u'\ue012'), XKB_KEY_Left},
+            {QChar(u'\ue014'), XKB_KEY_Right},     {QChar(u'\ue013'), XKB_KEY_Up},
+            {QChar(u'\ue003'), XKB_KEY_BackSpace}, {QChar(u'\ue001'), XKB_KEY_Cancel},
+            {QChar(u'\ue005'), XKB_KEY_Clear},     {QChar(u'\ue009'), XKB_KEY_Control_L},
+            {QChar(u'\ue028'), XKB_KEY_period},    {QChar(u'\ue017'), XKB_KEY_Delete},
+            {QChar(u'\ue029'), XKB_KEY_slash},     {QChar(u'\ue010'), XKB_KEY_End},
+            {QChar(u'\ue007'), XKB_KEY_KP_Enter},  {QChar(u'\ue019'), XKB_KEY_equal},
+            {QChar(u'\ue00c'), XKB_KEY_Escape},    {QChar(u'\ue031'), XKB_KEY_F1},
+            {QChar(u'\ue03a'), XKB_KEY_F10},       {QChar(u'\ue03b'), XKB_KEY_F11},
+            {QChar(u'\ue03c'), XKB_KEY_F12},       {QChar(u'\ue032'), XKB_KEY_F2},
+            {QChar(u'\ue033'), XKB_KEY_F3},        {QChar(u'\ue034'), XKB_KEY_F4},
+            {QChar(u'\ue035'), XKB_KEY_F5},        {QChar(u'\ue036'), XKB_KEY_F6},
+            {QChar(u'\ue037'), XKB_KEY_F7},        {QChar(u'\ue038'), XKB_KEY_F8},
+            {QChar(u'\ue039'), XKB_KEY_F9},        {QChar(u'\ue002'), XKB_KEY_Help},
+            {QChar(u'\ue011'), XKB_KEY_Home},      {QChar(u'\ue016'), XKB_KEY_Insert},
+            {QChar(u'\ue008'), XKB_KEY_Shift_L},   {QChar(u'\ue03d'), XKB_KEY_Meta_L},
+            {QChar(u'\ue024'), XKB_KEY_multiply},  {QChar(u'\ue000'), XKB_KEY_NoSymbol},
+            {QChar(u'\ue01a'), XKB_KEY_KP_0},      {QChar(u'\ue01b'), XKB_KEY_KP_1},
+            {QChar(u'\ue01c'), XKB_KEY_KP_2},      {QChar(u'\ue01d'), XKB_KEY_KP_3},
+            {QChar(u'\ue01e'), XKB_KEY_KP_4},      {QChar(u'\ue01f'), XKB_KEY_KP_5},
+            {QChar(u'\ue020'), XKB_KEY_KP_6},      {QChar(u'\ue021'), XKB_KEY_KP_7},
+            {QChar(u'\ue022'), XKB_KEY_KP_8},      {QChar(u'\ue023'), XKB_KEY_KP_9},
+            {QChar(u'\ue00f'), XKB_KEY_Page_Down}, {QChar(u'\ue00e'), XKB_KEY_Page_Up},
+            {QChar(u'\ue00b'), XKB_KEY_Pause},     {QChar(u'\ue006'), XKB_KEY_Return},
+            {QChar(u'\ue018'), XKB_KEY_semicolon}, {QChar(u'\ue026'), XKB_KEY_comma},
+            {QChar(u'\ue00d'), XKB_KEY_space},     {QChar(u'\ue027'), XKB_KEY_minus},
+            {QChar(u'\ue004'), XKB_KEY_Tab},       {QChar(u'\ue040'), XKB_KEY_Zenkaku_Hankaku},
+        };
+
+        if (auto it = charToKeyMap.constFind(key); it != charToKeyMap.cend()) {
+            return it.value();
         }
 
         return xkb_utf32_to_keysym(key.unicode());
