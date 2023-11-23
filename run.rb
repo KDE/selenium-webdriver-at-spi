@@ -107,10 +107,11 @@ def kwin_reexec!
     extra_args = []
     extra_args << '--virtual' if ENV['LIBGL_ALWAYS_SOFTWARE']
     extra_args << '--xwayland' if ENV.fetch('TEST_WITH_XWAYLAND', '0').to_i.positive?
+    extra_args << '--no-global-shortcuts' if ENV.fetch('TEST_WITHOUT_GLOBAL_SHORTCUTS', '1').to_i.positive?
     # A bit awkward because of how argument parsing works on the kwin side: we must rely on shell word merging for
     # the __FILE__ ARGV bit, separate ARGVs to kwin_wayland would be distinct subprocesses to start but we want
     # one processes with a bunch of arguments.
-    exec('kwin_wayland', '--no-lockscreen', '--no-global-shortcuts', *extra_args,
+    exec('kwin_wayland', '--no-lockscreen', *extra_args,
          '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}")
   end
   _pid, status = Process.waitpid2(kwin_pid)
