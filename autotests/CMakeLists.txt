@@ -40,6 +40,14 @@ set_tests_properties(valuetest PROPERTIES
     TIMEOUT 60
     ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt${QT_MAJOR_VERSION}::qmake>/qml")
 
+add_test(
+    NAME imagecomparisontest
+    COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/imagecomparisontest.py
+)
+set_tests_properties(imagecomparisontest PROPERTIES
+    TIMEOUT 60
+    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt${QT_MAJOR_VERSION}::qmake>/qml")
+
 # These tests depend on actual applications and cannot be run by the CI currently. To enable them we'd need a way
 # to on-demand install "packages" outside the regular Dependencies system of .kde-ci.yml.
 if(NOT "$ENV{KDECI_BUILD}" STREQUAL "TRUE")

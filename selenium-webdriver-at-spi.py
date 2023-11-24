@@ -3,6 +3,7 @@
 
 import base64
 from datetime import datetime, timedelta
+import numpy as np
 import tempfile
 import time
 import traceback
@@ -793,6 +794,131 @@ def session_appium_screenshot(session_id):
         return json.dumps({'value': {'error': err}}), 404, {'content-type': 'application/json'}
 
     return json.dumps({'value': out.decode('utf-8')}), 200, {'content-type': 'application/json'}
+
+
+@app.route('/session/<session_id>/appium/compare_images', methods=['POST'])
+def session_appium_compare_images(session_id):
+    """
+    Reference:
+    - https://github.com/appium/python-client/blob/master/appium/webdriver/extensions/images_comparison.py
+    - https://github.com/appium/appium/blob/master/packages/opencv/lib/index.js
+    """
+    session = sessions[session_id]
+    if not session:
+        return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    blob = json.loads(request.data)
+    mode: str = blob['mode']
+    options: dict = blob['options']
+    return_value: dict = {}
+
+    import cv2 as cv  # The extension is slow, so load it on demand
+
+    cv_image1 = cv.imdecode(np.fromstring(base64.b64decode(blob['firstImage']), np.uint8), cv.IMREAD_COLOR)
+    cv_image2 = cv.imdecode(np.fromstring(base64.b64decode(blob['secondImage']), np.uint8), cv.IMREAD_COLOR)
+
+    if mode == 'matchFeatures':
+        # https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_matcher/py_matcher.html
+        detectorName: str = options.get('detectorName', 'ORB')
+        matchFunc: str = options.get('matchFunc', 'BruteForce')
+        goodMatchesFactor: int = options.get('goodMatchesFactor', -1)
+
+        if detectorName == 'AKAZE':
+            detector = cv.AKAZE.create()
+        elif detectorName == 'AGAST':
+            detector = cv.AgastFeatureDetector.create()
+        elif detectorName == 'BRISK':
+            detector = cv.BRISK.create()
+        elif detectorName == 'FAST':
+            detector = cv.FastFeatureDetector.create()
+        elif detectorName == 'GFTT':
+            detector = cv.GFTTDetector.create()
+        elif detectorName == 'KAZE':
+            detector = cv.KAZE.create()
+        elif detectorName == 'MSER':
+            detector = cv.SIFT.create()
+        else:
+            detector = cv.ORB.create()
+
+        if matchFunc == 'FlannBased':
+            matcher = cv.FlannBasedMatcher.create()
+        elif matchFunc == 'BruteForceL1':
+            matcher = cv.BFMatcher.create(cv.NORM_L1, crossCheck=True)
+        elif matchFunc == 'BruteForceHamming':
+            matcher = cv.BFMatcher.create(cv.NORM_HAMMING, crossCheck=True)
+        elif matchFunc == 'BruteForceHammingLut':
+            matcher = cv.BFMatcher.create(cv.NORM_HAMMING2, crossCheck=True)
+        elif matchFunc == 'BruteForceSL2':
+            matcher = cv.BFMatcher.create(cv.NORM_L2, crossCheck=True)
+        else:
+            matcher = cv.BFMatcher.create(cv.NORM_L2, crossCheck=True)
+
+        # Find the keypoints and descriptors
+        kp1, des1 = detector.detectAndCompute(cv_image1, None)
+        kp2, des2 = detector.detectAndCompute(cv_image2, None)
+        matches = sorted(matcher.match(des1, des2), key=lambda m: m.distance)
+
+        if len(matches) < 1:
+            return json.dumps({'value': {'error': 'Could not find any matches between images. Double-check orientation, resolution, or use another detector or matching function.'}}), 404, {'content-type': 'application/json'}
+
+        return_value['count'] = min(len(matches), goodMatchesFactor) if goodMatchesFactor > 0 else len(matches)
+        return_value['points1'] = [kp1[m.queryIdx].pt for m in matches]
+        return_value['rect1'] = calculate_matched_rect(return_value['points1'])
+        return_value['points2'] = [kp2[m.trainIdx].pt for m in matches]
+        return_value['rect2'] = calculate_matched_rect(return_value['points2'])
+
+    elif mode == 'matchTemplate':
+        threshold: float = options.get('threshold', 0.0)  # Exact match
+
+        matched = cv.matchTemplate(cv_image1, cv_image2, cv.TM_SQDIFF_NORMED)
+        min_val, max_val, min_loc, max_loc = cv.minMaxLoc(matched)
+        print(min_val, max_val, min_loc, max_loc)
+
+        if min_val <= threshold:
+            x, y = min_loc
+            return_value['rect'] = {
+                'x': x,
+                "y": y,
+                'width': cv_image2.shape[1],
+                'height': cv_image2.shape[0],
+            }
+        else:
+            return json.dumps({'value': {'error': 'Cannot find any occurrences of the partial image in the full image.'}}), 404, {'content-type': 'application/json'}
+
+    elif mode == 'getSimilarity':
+        if cv_image1.shape != cv_image2.shape:
+            return json.dumps({'value': {'error': 'Both images are expected to have the same size in order to calculate the similarity score.'}}), 404, {'content-type': 'application/json'}
+        matched = cv.matchTemplate(cv_image1, cv_image2, cv.TM_SQDIFF_NORMED)
+        min_val, max_val, min_loc, max_loc = cv.minMaxLoc(matched)
+        print(min_val, max_val, min_loc, max_loc)
+        return_value['score'] = 1.0 - min_val
+
+    else:
+        return json.dumps({'value': {'error': 'Mode is not supported'}}), 404, {'content-type': 'application/json'}
+
+    return json.dumps({'value': return_value}), 200, {'content-type': 'application/json'}
+
+
+def calculate_matched_rect(matched_points: list[tuple[int, int]]) -> dict[str, int]:
+    if len(matched_points) < 2:
+        return {
+            'x': 0,
+            "y": 0,
+            'width': 0,
+            'height': 0,
+        }
+
+    points_sorted_by_distance = sorted(matched_points, key=lambda pt: pt[0] * pt[0] + pt[1] * pt[1])
+    first_point = points_sorted_by_distance[0]
+    last_point = points_sorted_by_distance[1]
+
+    return {
+        'x': min(first_point[0], last_point[0]),
+        "y": min(first_point[1], last_point[1]),
+        'width': abs(first_point[0] - last_point[0]),
+        'height': abs(first_point[1] - last_point[1]),
+    }
+
 
 def generate_keyboard_event_text(text):
     # using a nested kwin. need to synthesize keys into wayland (not supported in atspi right now)
