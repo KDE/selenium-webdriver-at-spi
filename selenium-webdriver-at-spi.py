@@ -221,7 +221,7 @@ class Session:
             appinfo = Gio.AppInfo.create_from_commandline(
                 desired_app, None, Gio.AppInfoCreateFlags.NONE)
             appinfo.launch([], context)
-        print(self.browsing_context)
+        print("browsing context set to:", self.browsing_context)
 
     def close(self) -> None:
         if self.launched:
