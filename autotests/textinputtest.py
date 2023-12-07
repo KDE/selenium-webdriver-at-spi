@@ -4,7 +4,10 @@
 # SPDX-FileCopyrightText: 2021-2023 Harald Sitter <sitter@kde.org>
 
 import os
+import time
 import unittest
+from datetime import datetime
+
 from appium import webdriver
 from appium.options.common.base import AppiumOptions
 from appium.webdriver.common.appiumby import AppiumBy
@@ -36,12 +39,14 @@ class TextInputTest(unittest.TestCase):
         element.send_keys("1;{)!#@")
         self.assertEqual(element.text, "1;{)!#@")
         element.clear()
+        time.sleep(1)
         self.assertEqual(element.text, "")
 
         # element implicitly has focus right now, test that we can just type globally
         ActionChains(self.driver).send_keys("1;{)!#@").perform()
         self.assertEqual(element.text, "1;{)!#@")
         element.clear()
+        time.sleep(1)
         self.assertEqual(element.text, "")
 
 
