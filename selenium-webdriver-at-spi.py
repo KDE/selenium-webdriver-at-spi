@@ -607,7 +607,7 @@ def session_element_clear(session_id, element_id):
                 pseudo_text = ''
                 pseudo_text += '\ue010' # end
                 for _ in range(characterCount):
-                    pseudo_text += '\u0008' # backspace
+                    pseudo_text += '\ue003'  # backspace
                 generate_keyboard_event_text(pseudo_text)
                 break
         if not processed:
