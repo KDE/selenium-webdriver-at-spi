@@ -4,7 +4,7 @@
 configure_file(org.kde.selenium-webdriver-at-spi-inputsynth.desktop.cmake ${CMAKE_CURRENT_BINARY_DIR}/org.kde.selenium-webdriver-at-spi-inputsynth.desktop)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/org.kde.selenium-webdriver-at-spi-inputsynth.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 
-add_executable(selenium-webdriver-at-spi-inputsynth main.cpp)
+add_executable(selenium-webdriver-at-spi-inputsynth main.cpp interaction.cpp)
 if(QT_MAJOR_VERSION EQUAL "5")
     ecm_add_qtwayland_client_protocol(selenium-webdriver-at-spi-inputsynth
         PROTOCOL ${PLASMA_WAYLAND_PROTOCOLS_DIR}/fake-input.xml
