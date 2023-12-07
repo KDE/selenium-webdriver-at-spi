@@ -52,9 +52,16 @@ int main(int argc, char **argv)
             const auto hash = jsonAction.toObject().toVariantHash();
             const auto type = hash.value(QStringLiteral("type")).toString();
             BaseAction *action = nullptr;
-            const auto string = hash.value(QStringLiteral("value")).toString();
-            const QChar *character = string.unicode();
-            action = new KeyboardAction(*character, typeToKeyState(type).value_or(WL_KEYBOARD_KEY_STATE_RELEASED));
+
+            if (type == QLatin1String("pause")) {
+                const ulong duration = hash.value(QStringLiteral("duration")).value<ulong>();
+                action = new PauseAction(duration);
+            } else {
+                const auto string = hash.value(QStringLiteral("value")).toString();
+                const QChar *character = string.unicode();
+                action = new KeyboardAction(*character, typeToKeyState(type).value_or(WL_KEYBOARD_KEY_STATE_RELEASED));
+            }
+
             actions.emplace_back(action);
         }
     }

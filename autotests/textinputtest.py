@@ -49,6 +49,17 @@ class TextInputTest(unittest.TestCase):
         time.sleep(1)
         self.assertEqual(element.text, "")
 
+    def test_pause(self):
+        element = self.driver.find_element(AppiumBy.NAME, "input")
+        before_time = datetime.now().timestamp()
+
+        ActionChains(self.driver).send_keys("123").pause(5).send_keys("456").perform()
+
+        after_time = datetime.now().timestamp()
+        self.assertEqual(element.text, "123456")
+        self.assertGreaterEqual(after_time - before_time, 5.0)
+        element.clear()
+
 
 if __name__ == '__main__':
     unittest.main()

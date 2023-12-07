@@ -322,4 +322,20 @@ xkb_keysym_t KeyboardAction::charToKeysym(const QChar &key)
 
     return xkb_utf32_to_keysym(key.unicode());
 }
+
+PauseAction::PauseAction(unsigned long duration)
+    : BaseAction()
+    , m_duration(duration)
+{
+}
+
+PauseAction::~PauseAction()
+{
+}
+
+void PauseAction::perform()
+{
+    QThread::msleep(m_duration);
+}
+
 #include "moc_interaction.cpp"

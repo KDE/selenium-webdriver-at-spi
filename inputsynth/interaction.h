@@ -136,3 +136,15 @@ private:
 
     wl_keyboard_key_state m_keyState;
 };
+
+class PauseAction : public BaseAction
+{
+public:
+    explicit PauseAction(unsigned long duration);
+    ~PauseAction() override;
+
+    void perform() override;
+
+private:
+    unsigned long m_duration = 0;
+};
