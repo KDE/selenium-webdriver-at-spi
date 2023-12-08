@@ -21,6 +21,9 @@
 
 FakeInputInterface *s_interface;
 
+QHash<unsigned /* unique id */, QPoint> PointerAction::s_positions = {};
+QSet<unsigned /*unique id*/> PointerAction::s_touchPoints = {};
+
 namespace
 {
 // Magic offset stolen from kwin.
@@ -47,6 +50,17 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, LayoutNames &layo
     argument.endStructure();
     return argument;
 }
+
+[[nodiscard]] unsigned getUniqueId(const QString &idStr)
+{
+    static unsigned lastId = 0;
+    static QHash<QString, unsigned> table;
+    if (auto it = table.find(idStr); it != table.end()) {
+        return *it;
+    }
+    return *table.insert(idStr, lastId++);
+}
+
 } // namespace
 
 Q_DECLARE_METATYPE(LayoutNames)
@@ -76,6 +90,12 @@ FakeInputInterface::FakeInputInterface()
 
 FakeInputInterface::~FakeInputInterface()
 {
+}
+
+void FakeInputInterface::touchRoundtrip()
+{
+    touch_frame();
+    wl_display_roundtrip(s_interface->m_display);
 }
 
 void FakeInputInterface::sendKey(const std::vector<quint32> &linuxModifiers, quint32 linuxKeyCode, wl_keyboard_key_state keyState)
@@ -337,6 +357,120 @@ PauseAction::~PauseAction()
 void PauseAction::perform()
 {
     QThread::msleep(m_duration);
+}
+
+PointerAction::PointerAction(PointerKind pointerType, const QString &id, ActionType actionType, Button button, unsigned long duration)
+    : m_uniqueId(getUniqueId(id))
+    , m_pointerType(pointerType)
+    , m_actionType(actionType)
+    , m_button(button)
+    , m_duration(duration)
+{
+}
+
+PointerAction::~PointerAction()
+{
+}
+
+void PointerAction::setPosition(const QPoint &pos, Origin origin)
+{
+    m_pos = pos;
+    m_origin = origin;
+}
+
+void PointerAction::perform()
+{
+    if (m_pointerType != PointerKind::Touch) {
+        qWarning("Unsupported pointer type");
+        return;
+    }
+
+    performTouch();
+}
+
+void PointerAction::performTouch()
+{
+    switch (m_actionType) {
+    case ActionType::Move: {
+        auto lastPosIt = s_positions.find(m_uniqueId);
+        if (lastPosIt == s_positions.end() || !s_touchPoints.contains(m_uniqueId)) {
+            // Save the initial position
+            s_positions[m_uniqueId] = m_pos;
+            return;
+        }
+        // Interpolate the trail based on the total duration
+        constexpr double stepDurationMs = 100.0; // Can't be too short otherwise Qt will ignore some events
+        int steps = 1;
+        if (m_duration > stepDurationMs) {
+            int xDiff = 0;
+            int yDiff = 0;
+            if (m_origin == Origin::Pointer) {
+                xDiff = m_pos.x();
+                yDiff = m_pos.y();
+            } else {
+                xDiff = m_pos.x() - lastPosIt->x();
+                yDiff = m_pos.y() - lastPosIt->y();
+            }
+
+            // Calculate how many steps are going to be performed
+            steps = std::ceil(m_duration / stepDurationMs);
+            // Distance that advances in each step
+            const int stepXDiff = std::lround(xDiff / double(steps));
+            const int stepYDiff = std::lround(yDiff / double(steps));
+
+            const QPoint &lastPos = s_positions[m_uniqueId];
+
+            for (int i : std::views::iota(1, steps)) {
+                s_interface->touch_motion(m_uniqueId, wl_fixed_from_int(lastPos.x() + stepXDiff * i), wl_fixed_from_int(lastPos.y() + stepYDiff * i));
+                s_interface->touchRoundtrip();
+                QThread::msleep(stepDurationMs);
+            }
+        }
+        // Final round of move
+        s_interface->touch_motion(m_uniqueId, wl_fixed_from_int(m_pos.x()), wl_fixed_from_int(m_pos.y()));
+        s_interface->touchRoundtrip();
+        // Sleep to the total duration
+        QThread::msleep(m_duration - (steps - 1) * stepDurationMs);
+        // Update the last position
+        *lastPosIt = m_pos;
+
+        return;
+    }
+
+    case ActionType::Down: {
+        if (s_touchPoints.contains(m_uniqueId)) {
+            return;
+        }
+        s_touchPoints.insert(m_uniqueId);
+        QPoint lastPos;
+        if (auto lastPosIt = s_positions.find(m_uniqueId); lastPosIt != s_positions.end()) {
+            lastPos = *lastPosIt;
+        } else {
+            lastPos = {0, 0};
+            s_positions[m_uniqueId] = lastPos;
+        }
+        s_interface->touch_down(m_uniqueId, wl_fixed_from_int(lastPos.x()), wl_fixed_from_int(lastPos.y()));
+        s_interface->touchRoundtrip();
+        return;
+    }
+    case ActionType::Up: {
+        if (s_touchPoints.remove(m_uniqueId)) {
+            s_interface->touch_up(m_uniqueId);
+            s_interface->touchRoundtrip();
+        }
+        return;
+    }
+    case ActionType::Cancel: {
+        if (!s_touchPoints.empty()) {
+            s_interface->touch_cancel();
+            s_interface->touchRoundtrip();
+            s_touchPoints.clear();
+        }
+        return;
+    }
+    }
+
+    qWarning() << "Ignored an unknown action type" << static_cast<int>(m_actionType);
 }
 
 #include "moc_interaction.cpp"

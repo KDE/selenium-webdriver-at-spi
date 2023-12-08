@@ -7,7 +7,9 @@
 #pragma once
 
 #include "qwayland-fake-input.h"
+#include <QHash>
 #include <QMap>
+#include <QPoint>
 #include <QWaylandClientExtensionTemplate>
 #if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
 #include <qpa/qplatformnativeinterface.h>
@@ -51,6 +53,7 @@ public:
     explicit FakeInputInterface();
     ~FakeInputInterface() override;
 
+    void touchRoundtrip();
     void sendKey(const std::vector<quint32> &linuxModifiers, quint32 linuxKeyCode, wl_keyboard_key_state keyState);
 
     Q_DISABLE_COPY_MOVE(FakeInputInterface)
@@ -146,5 +149,61 @@ public:
     void perform() override;
 
 private:
+    unsigned long m_duration = 0;
+};
+
+class PointerAction : public BaseAction
+{
+public:
+    // https://github.com/SeleniumHQ/selenium/blob/6620bce4e8e9da1fee3ec5a5547afa7dece3f80e/py/selenium/webdriver/common/actions/interaction.py#L30
+    enum class PointerKind {
+        Mouse,
+        Touch,
+        Pen,
+    };
+
+    enum class ActionType {
+        Move,
+        Down,
+        Up,
+        Cancel,
+    };
+
+    enum class Button {
+        Left = 0,
+        Touch = 0,
+        PenContact = 0,
+        Middle = 1,
+        Right = 2,
+        PenBarrel = 2,
+        X1 = 3,
+        Back = 3,
+        X2 = 4,
+        Forward = 4,
+    };
+
+    enum class Origin {
+        Viewport,
+        Pointer,
+    };
+
+    explicit PointerAction(PointerKind pointerType, const QString &id, ActionType actionType, Button button, unsigned long duration);
+    ~PointerAction() override;
+
+    void setPosition(const QPoint &pos, Origin origin);
+    void perform() override;
+
+private:
+    void performTouch();
+
+    static QHash<unsigned /* unique id */, QPoint> s_positions;
+    static QSet<unsigned /*unique id*/> s_touchPoints;
+
+    unsigned m_uniqueId;
+    PointerKind m_pointerType = PointerKind::Touch;
+    ActionType m_actionType = ActionType::Move;
+    Button m_button = Button::Left;
+    QPoint m_pos;
+    Origin m_origin = Origin::Viewport;
     unsigned long m_duration = 0;
 };
