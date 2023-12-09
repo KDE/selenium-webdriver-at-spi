@@ -7,6 +7,7 @@
 #include "interaction.h"
 
 #include <ranges>
+#include <span>
 
 #include <QDBusConnection>
 #include <QDBusInterface>
