@@ -118,6 +118,24 @@ int main(int argc, char **argv)
                 actions.emplace_back(action);
             }
             continue;
+        } else if (inputType == QLatin1String("wheel")) {
+            const QString id = jsonActionSet[QLatin1String("id")].toString(QStringLiteral("Default"));
+            const auto wheelActions = jsonActionSet[QLatin1String("actions")].toArray();
+            for (const auto &pointerAction : wheelActions) {
+                const auto hash = pointerAction.toObject().toVariantHash();
+                const auto duration = hash.value(QStringLiteral("duration")).value<ulong>();
+
+                if (const QString actionType = hash.value(QStringLiteral("type")).toString(); actionType == QLatin1String("pause")) {
+                    actions.emplace_back(new PauseAction(duration));
+                    continue;
+                } else {
+                    const auto x = hash.value(QStringLiteral("x")).toInt();
+                    const auto y = hash.value(QStringLiteral("y")).toInt();
+                    const auto deltaX = hash.value(QStringLiteral("deltaX")).toInt();
+                    const auto deltaY = hash.value(QStringLiteral("deltaY")).toInt();
+                    actions.emplace_back(new WheelAction(id, QPoint(x, y), QPoint(deltaX, deltaY), duration));
+                }
+            }
         } else {
             qWarning() << "unsupported action type" << jsonActionSet;
             continue;

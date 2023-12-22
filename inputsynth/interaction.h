@@ -55,7 +55,7 @@ public:
     explicit FakeInputInterface();
     ~FakeInputInterface() override;
 
-    void touchRoundtrip();
+    void roundtrip(bool touch = false);
     void sendKey(const std::vector<quint32> &linuxModifiers, quint32 linuxKeyCode, wl_keyboard_key_state keyState);
 
     Q_DISABLE_COPY_MOVE(FakeInputInterface)
@@ -154,6 +154,21 @@ private:
     unsigned long m_duration = 0;
 };
 
+class WheelAction : public BaseAction
+{
+public:
+    explicit WheelAction(const QString &id, const QPoint &pos, const QPoint &deltaPos, unsigned long duration);
+    ~WheelAction() override;
+
+    void perform() override;
+
+private:
+    unsigned m_uniqueId;
+    QPoint m_pos;
+    QPoint m_deltaPos;
+    unsigned long m_duration = 0;
+};
+
 class PointerAction : public BaseAction
 {
 public:
@@ -196,10 +211,9 @@ public:
     void perform() override;
 
 private:
-    void performTouch();
-
     static QHash<unsigned /* unique id */, QPoint> s_positions;
     static QSet<unsigned /*unique id*/> s_touchPoints;
+    static QSet<int /* pressed button */> s_mouseButtons;
 
     unsigned m_uniqueId;
     PointerKind m_pointerType = PointerKind::Touch;
@@ -208,4 +222,6 @@ private:
     QPoint m_pos;
     Origin m_origin = Origin::Viewport;
     unsigned long m_duration = 0;
+
+    friend class WheelAction;
 };

@@ -9,6 +9,8 @@
 #include <ranges>
 #include <span>
 
+#include <linux/input-event-codes.h>
+
 #include <QDBusConnection>
 #include <QDBusInterface>
 #include <QDBusMessage>
@@ -23,6 +25,7 @@ FakeInputInterface *s_interface;
 
 QHash<unsigned /* unique id */, QPoint> PointerAction::s_positions = {};
 QSet<unsigned /*unique id*/> PointerAction::s_touchPoints = {};
+QSet<int /* pressed button */> PointerAction::s_mouseButtons = {};
 
 namespace
 {
@@ -92,9 +95,11 @@ FakeInputInterface::~FakeInputInterface()
 {
 }
 
-void FakeInputInterface::touchRoundtrip()
+void FakeInputInterface::roundtrip(bool touch)
 {
-    touch_frame();
+    if (touch) {
+        touch_frame();
+    }
     wl_display_roundtrip(s_interface->m_display);
 }
 
@@ -359,6 +364,36 @@ void PauseAction::perform()
     QThread::msleep(m_duration);
 }
 
+WheelAction::WheelAction(const QString &id, const QPoint &pos, const QPoint &deltaPos, unsigned long duration)
+    : m_uniqueId(getUniqueId(id))
+    , m_pos(pos)
+    , m_deltaPos(deltaPos)
+    , m_duration(duration)
+{
+}
+
+WheelAction::~WheelAction()
+{
+}
+
+void WheelAction::perform()
+{
+    PointerAction::s_positions[m_uniqueId] = m_pos;
+    s_interface->pointer_motion_absolute(wl_fixed_from_int(m_pos.x()), wl_fixed_from_int(m_pos.y()));
+    s_interface->roundtrip();
+
+    if (m_deltaPos.x() != 0) {
+        s_interface->axis(WL_POINTER_AXIS_HORIZONTAL_SCROLL, wl_fixed_from_int(m_deltaPos.x()));
+        s_interface->roundtrip();
+    }
+    if (m_deltaPos.y() != 0) {
+        s_interface->axis(WL_POINTER_AXIS_VERTICAL_SCROLL, wl_fixed_from_int(m_deltaPos.y()));
+        s_interface->roundtrip();
+    }
+
+    QThread::msleep(m_duration);
+}
+
 PointerAction::PointerAction(PointerKind pointerType, const QString &id, ActionType actionType, Button button, unsigned long duration)
     : m_uniqueId(getUniqueId(id))
     , m_pointerType(pointerType)
@@ -380,20 +415,22 @@ void PointerAction::setPosition(const QPoint &pos, Origin origin)
 
 void PointerAction::perform()
 {
-    if (m_pointerType != PointerKind::Touch) {
-        qWarning("Unsupported pointer type");
-        return;
-    }
+    static const QHash<int, uint32_t> s_buttonMap = {
+        {static_cast<int>(Button::Left), BTN_LEFT},
+        {static_cast<int>(Button::Middle), BTN_MIDDLE},
+        {static_cast<int>(Button::Right), BTN_RIGHT},
+        {static_cast<int>(Button::Forward), BTN_FORWARD},
+        {static_cast<int>(Button::Back), BTN_BACK},
+    };
 
-    performTouch();
-}
-
-void PointerAction::performTouch()
-{
     switch (m_actionType) {
     case ActionType::Move: {
         auto lastPosIt = s_positions.find(m_uniqueId);
-        if (lastPosIt == s_positions.end() || !s_touchPoints.contains(m_uniqueId)) {
+        if (m_pointerType == PointerKind::Mouse) {
+            if (lastPosIt == s_positions.end()) {
+                lastPosIt = s_positions.insert(m_uniqueId, QPoint(0, 0));
+            }
+        } else if (lastPosIt == s_positions.end() || !s_touchPoints.contains(m_uniqueId)) {
             // Save the initial position
             s_positions[m_uniqueId] = m_pos;
             return;
@@ -418,17 +455,27 @@ void PointerAction::performTouch()
             const int stepXDiff = std::lround(xDiff / double(steps));
             const int stepYDiff = std::lround(yDiff / double(steps));
 
-            const QPoint &lastPos = s_positions[m_uniqueId];
-
             for (int i : std::views::iota(1, steps)) {
-                s_interface->touch_motion(m_uniqueId, wl_fixed_from_int(lastPos.x() + stepXDiff * i), wl_fixed_from_int(lastPos.y() + stepYDiff * i));
-                s_interface->touchRoundtrip();
+                const wl_fixed_t newX = wl_fixed_from_int(lastPosIt->x() + stepXDiff * i);
+                const wl_fixed_t newY = wl_fixed_from_int(lastPosIt->y() + stepYDiff * i);
+                if (m_pointerType == PointerKind::Touch) {
+                    s_interface->touch_motion(m_uniqueId, newX, newY);
+                } else {
+                    s_interface->pointer_motion_absolute(newX, newY);
+                }
+                s_interface->roundtrip(m_pointerType == PointerKind::Touch);
                 QThread::msleep(stepDurationMs);
             }
         }
         // Final round of move
-        s_interface->touch_motion(m_uniqueId, wl_fixed_from_int(m_pos.x()), wl_fixed_from_int(m_pos.y()));
-        s_interface->touchRoundtrip();
+        const wl_fixed_t lastX = wl_fixed_from_int(m_pos.x());
+        const wl_fixed_t lastY = wl_fixed_from_int(m_pos.y());
+        if (m_pointerType == PointerKind::Touch) {
+            s_interface->touch_motion(m_uniqueId, lastX, lastY);
+        } else {
+            s_interface->pointer_motion_absolute(lastX, lastY);
+        }
+        s_interface->roundtrip(m_pointerType == PointerKind::Touch);
         // Sleep to the total duration
         QThread::msleep(m_duration - (steps - 1) * stepDurationMs);
         // Update the last position
@@ -438,10 +485,6 @@ void PointerAction::performTouch()
     }
 
     case ActionType::Down: {
-        if (s_touchPoints.contains(m_uniqueId)) {
-            return;
-        }
-        s_touchPoints.insert(m_uniqueId);
         QPoint lastPos;
         if (auto lastPosIt = s_positions.find(m_uniqueId); lastPosIt != s_positions.end()) {
             lastPos = *lastPosIt;
@@ -449,26 +492,55 @@ void PointerAction::performTouch()
             lastPos = {0, 0};
             s_positions[m_uniqueId] = lastPos;
         }
-        qDebug() << "sending touch_down at" << lastPos;
-        s_interface->touch_down(m_uniqueId, wl_fixed_from_int(lastPos.x()), wl_fixed_from_int(lastPos.y()));
-        s_interface->touchRoundtrip();
+
+        if (m_pointerType == PointerKind::Touch) {
+            if (s_touchPoints.contains(m_uniqueId)) {
+                return;
+            }
+            s_touchPoints.insert(m_uniqueId);
+            qDebug() << "sending touch_down at" << lastPos;
+            s_interface->touch_down(m_uniqueId, wl_fixed_from_int(lastPos.x()), wl_fixed_from_int(lastPos.y()));
+        } else {
+            if (s_mouseButtons.contains(static_cast<int>(m_button))) {
+                return;
+            }
+            s_mouseButtons.insert(static_cast<int>(m_button));
+            qDebug() << "clicking at" << lastPos;
+            s_interface->button(s_buttonMap[static_cast<int>(m_button)], WL_POINTER_BUTTON_STATE_PRESSED);
+        }
+        s_interface->roundtrip(m_pointerType == PointerKind::Touch);
         return;
     }
     case ActionType::Up: {
-        if (s_touchPoints.remove(m_uniqueId)) {
-            qDebug() << "sending touch_up";
-            s_interface->touch_up(m_uniqueId);
-            s_interface->touchRoundtrip();
+        if (m_pointerType == PointerKind::Touch) {
+            if (s_touchPoints.remove(m_uniqueId)) {
+                qDebug() << "sending touch_up";
+                s_interface->touch_up(m_uniqueId);
+            }
+        } else {
+            if (s_mouseButtons.remove(static_cast<int>(m_button))) {
+                qDebug() << "releasing mouse button" << static_cast<int>(m_button);
+                s_interface->button(s_buttonMap[static_cast<int>(m_button)], WL_POINTER_BUTTON_STATE_RELEASED);
+            }
         }
+        s_interface->roundtrip(m_pointerType == PointerKind::Touch);
         return;
     }
     case ActionType::Cancel: {
-        if (!s_touchPoints.empty()) {
-            qDebug() << "sending touch_cancel";
-            s_interface->touch_cancel();
-            s_interface->touchRoundtrip();
-            s_touchPoints.clear();
+        if (m_pointerType == PointerKind::Touch) {
+            if (!s_touchPoints.empty()) {
+                s_interface->touch_cancel();
+                s_touchPoints.clear();
+            }
+        } else {
+            if (!s_mouseButtons.empty()) {
+                for (auto button : s_mouseButtons) {
+                    s_interface->button(s_buttonMap[button], WL_POINTER_BUTTON_STATE_RELEASED);
+                }
+                s_mouseButtons.clear();
+            }
         }
+        s_interface->roundtrip(m_pointerType == PointerKind::Touch);
         return;
     }
     }

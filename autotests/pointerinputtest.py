@@ -11,9 +11,10 @@ from appium import webdriver
 from appium.options.common.base import AppiumOptions
 from appium.webdriver.common.appiumby import AppiumBy
 from selenium.webdriver.common.actions.action_builder import ActionBuilder
-from selenium.webdriver.common.actions.interaction import POINTER_TOUCH
+from selenium.webdriver.common.actions.interaction import (POINTER_MOUSE, POINTER_TOUCH)
 from selenium.webdriver.common.actions.mouse_button import MouseButton
 from selenium.webdriver.common.actions.pointer_input import PointerInput
+from selenium.webdriver.common.actions.wheel_actions import WheelActions
 
 
 class PointerInputTest(unittest.TestCase):
@@ -57,6 +58,47 @@ class PointerInputTest(unittest.TestCase):
         action.pointer_action.move_to_location(200, 200).pointer_down().move_to_location(400, 400).pointer_up()
         action.perform()
         self.assertEqual(element.text, "dragged")
+
+    def test_mouse(self) -> None:
+        element = self.driver.find_element(AppiumBy.NAME, "result")
+
+        action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_MOUSE, "mouse"))
+        action.pointer_action.move_to_location(100, 100).click()
+        action.perform()
+        self.assertEqual(element.text, "mouse left")
+
+        action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_MOUSE, "mouse"))
+        action.pointer_action.move_to_location(200, 200).pointer_down().move_by(200, 200).pointer_up()
+        action.perform()
+        self.assertEqual(element.text, "dragged")
+
+        action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_MOUSE, "mouse"))
+        action.pointer_action.move_to_location(100, 100).click(None, MouseButton.MIDDLE)
+        action.perform()
+        self.assertEqual(element.text, "mouse middle")
+
+        action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_MOUSE, "mouse"))
+        action.pointer_action.move_to_location(200, 200).pointer_down().move_to_location(400, 400).pointer_up()
+        action.perform()
+        self.assertEqual(element.text, "dragged")
+
+        action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_MOUSE, "mouse"))
+        action.pointer_action.move_to_location(100, 100).click(None, MouseButton.RIGHT)
+        action.perform()
+        self.assertEqual(element.text, "mouse right")
+
+    def test_wheel(self) -> None:
+        element = self.driver.find_element(AppiumBy.NAME, "result")
+
+        action = ActionBuilder(self.driver)
+        action.wheel_action.scroll(100, 100, 0, -15)
+        action.perform()
+        self.assertEqual(element.text, "wheel 0 180")
+
+        action = ActionBuilder(self.driver)
+        action.wheel_action.scroll(100, 100, -15, 0)
+        action.perform()
+        self.assertEqual(element.text, "wheel 180 0")
 
 
 if __name__ == '__main__':

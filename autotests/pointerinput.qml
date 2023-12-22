@@ -43,6 +43,11 @@ Item {
     }
 
     DragHandler {
+        target: result
         onActiveChanged: if (active) result.text = "dragged"
+    }
+
+    WheelHandler {
+        onWheel: wheel => result.text = `wheel ${wheel.angleDelta.x} ${wheel.angleDelta.y}`
     }
 }
