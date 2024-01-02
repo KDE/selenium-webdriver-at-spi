@@ -399,7 +399,7 @@ void PointerAction::performTouch()
             return;
         }
         // Interpolate the trail based on the total duration
-        constexpr double stepDurationMs = 100.0; // Can't be too short otherwise Qt will ignore some events
+        constexpr double stepDurationMs = 50.0; // Can't be too short otherwise Qt will ignore some events
         int steps = 1;
         if (m_duration > stepDurationMs) {
             int xDiff = 0;
