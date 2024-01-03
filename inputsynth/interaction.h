@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "qwayland-fake-input.h"
 #include <QHash>
 #include <QMap>
