@@ -449,12 +449,14 @@ void PointerAction::performTouch()
             lastPos = {0, 0};
             s_positions[m_uniqueId] = lastPos;
         }
+        qDebug() << "sending touch_down at" << lastPos;
         s_interface->touch_down(m_uniqueId, wl_fixed_from_int(lastPos.x()), wl_fixed_from_int(lastPos.y()));
         s_interface->touchRoundtrip();
         return;
     }
     case ActionType::Up: {
         if (s_touchPoints.remove(m_uniqueId)) {
+            qDebug() << "sending touch_up";
             s_interface->touch_up(m_uniqueId);
             s_interface->touchRoundtrip();
         }
@@ -462,6 +464,7 @@ void PointerAction::performTouch()
     }
     case ActionType::Cancel: {
         if (!s_touchPoints.empty()) {
+            qDebug() << "sending touch_cancel";
             s_interface->touch_cancel();
             s_interface->touchRoundtrip();
             s_touchPoints.clear();
