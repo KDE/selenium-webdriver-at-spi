@@ -539,8 +539,15 @@ def session_element_element(session_id, element_id):
     if not start:  # browsing context (no longer) valid
         return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
 
-    return locator(session, strategy, selector, start)
+    results = locator(session, strategy, selector, start)
 
+    if not results:
+        return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
+
+    result = results[0]
+    unique_id = result.path.replace('/', '-')
+    session.elements[unique_id] = result
+    return json.dumps({'value': {'element-6066-11e4-a52e-4f735466cecf': unique_id}}), 200, {'content-type': 'application/json'}
 
 @app.route('/session/<session_id>/element/<element_id>/value', methods=['POST'])
 def session_element_value(session_id, element_id):
