@@ -304,7 +304,7 @@ def session_source_raw(session_id):
     return etree.tostring(doc, pretty_print=True).decode("utf-8"), 200, {'content-type': 'application/xml'}
 
 
-def locator(session, strategy, selector, start):
+def locator(session, strategy, selector, start, findAll = False):
     # pyatspi.findDescendant(start, lambda x: print(x))
 
     end_time = datetime.now() + \
@@ -341,10 +341,15 @@ def locator(session, strategy, selector, start):
                 def pred(x): return x.description == selector and (x.getState().contains(
                     pyatspi.STATE_VISIBLE) or x.getState().contains(pyatspi.STATE_SENSITIVE))
             # there are also id and accessibleId but they seem not ever set. Not sure what to make of that :shrug:
-            accessible = pyatspi.findDescendant(start, pred)
+            if findAll:
+                accessible = pyatspi.findAllDescendants(start, pred)
+                if accessible:
+                    results += accessible
+            else:
+                accessible = pyatspi.findDescendant(start, pred)
+                if accessible:
+                    results.append(accessible)
             print(accessible)
-            if accessible:
-                results.append(accessible)
         if len(results) > 0:
             break
 
@@ -404,7 +409,7 @@ def session_element2(session_id=None):
     if not start:  # browsing context (no longer) valid
         return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
 
-    results = locator(session, strategy, selector, start)
+    results = locator(session, strategy, selector, start, findAll = True)
 
     if not results:
         return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
