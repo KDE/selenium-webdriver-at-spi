@@ -15,47 +15,15 @@
 #include <QFile>
 #include <QGuiApplication>
 #include <QImage>
+#include <QProcess>
+#include <QTemporaryFile>
 #include <qplatformdefs.h>
 
 using namespace std::chrono_literals;
 
-// When the tests are run under an existing session, the well known org.kde.KWin name will be claimed by the real
-// kwin, figure out where our test kwin resides on the bus by reverse looking up the PID.
-std::optional<QString> kwinService()
+namespace
 {
-    auto bus = QDBusConnection::sessionBus();
-
-    const QString kwinPid = qEnvironmentVariable("KWIN_PID");
-    if (kwinPid.isEmpty()) {
-        return QStringLiteral("org.kde.KWin");
-    }
-
-    QDBusMessage message = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
-                                                            QStringLiteral("/org/freedesktop/DBus"),
-                                                            QStringLiteral("org.freedesktop.DBus"),
-                                                            QStringLiteral("ListNames"));
-    QDBusReply<QStringList> namesReply = bus.call(message);
-    if (namesReply.isValid()) {
-        const auto names = namesReply.value();
-        for (const auto &name : names) {
-            QDBusMessage getPid = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
-                                                                    QStringLiteral("/org/freedesktop/DBus"),
-                                                                    QStringLiteral("org.freedesktop.DBus"),
-                                                                    QStringLiteral("GetConnectionUnixProcessID"));
-            getPid << name;
-            QDBusReply<quint32> pid = bus.call(getPid);
-            if (pid.isValid() && QString::number(pid.value()) == kwinPid) {
-                return name;
-            }
-        }
-    } else {
-        qWarning() << namesReply.error();
-    }
-
-    return std::nullopt;
-}
-
-static QImage allocateImage(const QVariantMap &metadata)
+QImage allocateImage(const QVariantMap &metadata)
 {
     bool ok = false;
 
@@ -77,7 +45,7 @@ static QImage allocateImage(const QVariantMap &metadata)
     return {width, height, QImage::Format(format)};
 }
 
-static QImage readImage(int pipeFd, const QVariantMap &metadata)
+QImage readImage(int pipeFd, const QVariantMap &metadata)
 {
     QFile out;
     if (!out.open(pipeFd, QFileDevice::ReadOnly, QFileDevice::AutoCloseHandle)) {
@@ -101,10 +69,53 @@ static QImage readImage(int pipeFd, const QVariantMap &metadata)
     return result;
 }
 
-int main(int argc, char **argv)
+// When the tests are run under an existing session, the well known org.kde.KWin name will be claimed by the real
+// kwin, figure out where our test kwin resides on the bus by reverse looking up the PID.
+std::optional<QString> kwinService()
 {
-    const QGuiApplication app(argc, argv);
+    auto bus = QDBusConnection::sessionBus();
 
+    const QString kwinPid = qEnvironmentVariable("KWIN_PID");
+    if (kwinPid.isEmpty()) {
+        return QStringLiteral("org.kde.KWin");
+    }
+
+    QDBusMessage message = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
+                                                          QStringLiteral("/org/freedesktop/DBus"),
+                                                          QStringLiteral("org.freedesktop.DBus"),
+                                                          QStringLiteral("ListNames"));
+    QDBusReply<QStringList> namesReply = bus.call(message);
+    if (namesReply.isValid()) {
+        const auto names = namesReply.value();
+        for (const auto &name : names) {
+            QDBusMessage getPid = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
+                                                                 QStringLiteral("/org/freedesktop/DBus"),
+                                                                 QStringLiteral("org.freedesktop.DBus"),
+                                                                 QStringLiteral("GetConnectionUnixProcessID"));
+            getPid << name;
+            QDBusReply<quint32> pid = bus.call(getPid);
+            if (pid.isValid() && QString::number(pid.value()) == kwinPid) {
+                return name;
+            }
+        }
+    } else {
+        qWarning() << namesReply.error();
+    }
+
+    return std::nullopt;
+}
+
+QImage takeScreenshotX11()
+{
+    QTemporaryFile tempFile(QStringLiteral("XXXXXX.png"));
+    QProcess importProc;
+    importProc.start(QStringLiteral("import"), {QStringLiteral("-window"), QStringLiteral("root"), tempFile.fileName()});
+    importProc.waitForFinished();
+    return QImage(tempFile.fileName());
+}
+
+QImage takeScreenshotWayland()
+{
     // Unfortunately since the geometries are not including the DPR we can only look at one screen
     // and hope that they are all the same :(
     //
@@ -123,13 +134,13 @@ int main(int argc, char **argv)
     const auto service = kwinService();
     if (!service.has_value()) {
         qWarning() << "kwin dbus service not resolved";
-        return 1;
+        return {};
     }
 
     auto pipeFds = std::to_array<int>({0, 0});
     if (pipe2(pipeFds.data(), O_CLOEXEC | O_NONBLOCK) != 0) {
         qWarning() << "failed to open pipe" << strerror(errno);
-        return 1;
+        return {};
     }
 
     QVariantList arguments;
@@ -148,15 +159,34 @@ int main(int argc, char **argv)
     QDBusReply<QVariantMap> reply = msg.reply();
     if (!reply.isValid()) {
         qWarning() << reply.error();
-        return 1;
+        return {};
     }
 
     ::close(pipeFds.at(1));
-    const auto image = readImage(pipeFds.at(0), reply.value());
+
+    return readImage(pipeFds.at(0), reply.value());
+}
+}
+
+int main(int argc, char **argv)
+{
+    const QGuiApplication app(argc, argv);
+
+    QImage image;
+    if (qgetenv("TEST_WITH_KWIN_WAYLAND") == "0") {
+        image = takeScreenshotX11();
+        if (image.isNull()) {
+            return 1;
+        }
+    } else {
+        image = takeScreenshotWayland();
+        if (image.isNull()) {
+            return 1;
+        }
+    }
+
     QBuffer buf;
     image.save(&buf, "PNG");
     printf("%s", buf.data().toBase64().constData()); // intentionally no newline so we don't need to strip on the py side
     return 0;
 }
-
-
