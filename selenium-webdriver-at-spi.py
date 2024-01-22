@@ -801,6 +801,7 @@ def session_appium_screenshot(session_id):
                              str(0), str(0), str(0), str(0)],
                             stdout=subprocess.PIPE)
     out, err = proc.communicate()
+    print(out, file=sys.stderr)
 
     if not out:
         return json.dumps({'value': {'error': err}}), 404, {'content-type': 'application/json'}
