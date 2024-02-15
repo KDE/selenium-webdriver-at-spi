@@ -11,6 +11,7 @@
 #include <QJsonObject>
 
 #include "interaction.h"
+#include "interface.h"
 
 namespace
 {
@@ -40,7 +41,7 @@ int main(int argc, char **argv)
 
     std::vector<BaseAction *> actions;
 
-    s_interface = new FakeInputInterface;
+    s_interface = new WaylandInterface;
 
     const auto document = QJsonDocument::fromJson(actionFile.readAll());
     const auto jsonObject = document.object();
@@ -84,7 +85,7 @@ int main(int argc, char **argv)
                 const auto hash = pointerAction.toObject().toVariantHash();
                 const auto duration = hash.value(QStringLiteral("duration")).value<ulong>();
 
-                PointerAction::ActionType actionTypeInt = PointerAction::ActionType::Cancel;
+                PointerAction::ActionType actionTypeInt = PointerAction::ActionType::Up;
                 if (const QString actionType = hash.value(QStringLiteral("type")).toString(); actionType == QLatin1String("pointerDown")) {
                     actionTypeInt = PointerAction::ActionType::Down;
                 } else if (actionType == QLatin1String("pointerUp")) {
@@ -96,9 +97,9 @@ int main(int argc, char **argv)
                     continue;
                 }
 
-                PointerAction::Button button = PointerAction::Button::Left;
+                InputEmulationInterface::Button button = InputEmulationInterface::Button::Left;
                 if (pointerTypeInt == PointerAction::PointerKind::Mouse) {
-                    button = static_cast<PointerAction::Button>(hash.value(QStringLiteral("button")).toInt());
+                    button = static_cast<InputEmulationInterface::Button>(hash.value(QStringLiteral("button")).toInt());
                 }
 
                 auto action = new PointerAction(pointerTypeInt, id, actionTypeInt, button, duration);
@@ -150,7 +151,7 @@ int main(int argc, char **argv)
         QCoreApplication::quit();
     };
 
-    app.connect(s_interface, &FakeInputInterface::readyChanged, &app, performActions);
+    app.connect(s_interface, &InputEmulationInterface::initialized, &app, performActions);
 
     return app.exec();
 }

@@ -50,7 +50,7 @@ class PointerInputTest(unittest.TestCase):
         self.assertEqual(element.text, "dragged")
 
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_TOUCH, "finger"))
-        action.pointer_action.move_to_location(100, 100).pointer_down().pause(3).pointer_up()
+        action.pointer_action.move_to_location(100, 100).pointer_down().pause(5).pointer_up()
         action.perform()
         self.assertEqual(element.text, "touchscreen longpressed")
 
@@ -86,6 +86,8 @@ class PointerInputTest(unittest.TestCase):
         action.pointer_action.move_to_location(100, 100).click(None, MouseButton.RIGHT)
         action.perform()
         self.assertEqual(element.text, "mouse right")
+
+        time.sleep(1)
 
     def test_wheel(self) -> None:
         element = self.driver.find_element(AppiumBy.NAME, "result")

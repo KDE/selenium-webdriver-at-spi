@@ -4,7 +4,13 @@
 configure_file(org.kde.selenium-webdriver-at-spi-inputsynth.desktop.cmake ${CMAKE_CURRENT_BINARY_DIR}/org.kde.selenium-webdriver-at-spi-inputsynth.desktop)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/org.kde.selenium-webdriver-at-spi-inputsynth.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 
-add_executable(selenium-webdriver-at-spi-inputsynth main.cpp interaction.cpp)
+set(inputsynth_SRCS main.cpp interaction.cpp interface.cpp)
+
+set(inputcapture_xml ${CMAKE_CURRENT_SOURCE_DIR}/org.freedesktop.portal.InputCapture.xml)
+set_source_files_properties(${inputcapture_xml} PROPERTIES INCLUDE "inputcapture_dbustypes.h")
+qt_add_dbus_interface(inputsynth_SRCS ${inputcapture_xml} inputcapture)
+
+add_executable(selenium-webdriver-at-spi-inputsynth ${inputsynth_SRCS})
 if(QT_MAJOR_VERSION EQUAL "5")
     ecm_add_qtwayland_client_protocol(selenium-webdriver-at-spi-inputsynth
         PROTOCOL ${PLASMA_WAYLAND_PROTOCOLS_DIR}/fake-input.xml
