@@ -205,19 +205,6 @@ PORT = '4723'
 $stdout.sync = true # force immediate flushing without internal caching
 logger = Logger.new($stdout)
 
-# Tweak the CIs logging rules. They are way too verbose for our purposes
-if ENV['KDECI_BUILD'] == 'TRUE'
-  ENV['QT_LOGGING_RULES'] = <<-RULES.gsub(/\s/, '')
-    default=true;*.debug=true;kf.globalaccel.kglobalacceld=false;kf.wayland.client=false;
-    qt.scenegraph.*=false;qt.qml.diskcache=false;
-    qt.qml.*=false;qt.qpa.wayland.*=false;qt.quick.dirty=false;qt.accessibility.cache=false;qt.v4.asm=false;
-    qt.opengl.diskcache=false;qt.qpa.fonts=false;kf.kio.workers.http=false;
-    qt.quick.*=false;qt.text.*=false;qt.qpa.input.methods=false;
-    qt.qpa.backingstore=false;qt.gui.*=false;qt.core.plugin.loader=false;
-  RULES
-  ENV['QT_LOGGING_RULES'] = ENV['QT_LOGGING_RULES_OVERRIDE'] if ENV.include?('QT_LOGGING_RULES_OVERRIDE')
-end
-
 logger.info 'Installing dependencies'
 datadir = File.absolute_path("#{__dir__}/../share/selenium-webdriver-at-spi/")
 requirements_installed_marker = "#{Dir.tmpdir}/selenium-requirements-installed"
