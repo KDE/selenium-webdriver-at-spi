@@ -21,5 +21,4 @@ Dependencies:
     'third-party/wayland': '@latest'
 
 Options:
-  ctest-arguments: '--repeat until-pass:5'
   require-passing-tests-on: [ 'Linux' ]
