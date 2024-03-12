@@ -8,6 +8,19 @@ Item {
     width: Screen.width
     height: Screen.height
 
+    HoverHandler {
+        id: hoverHandler
+    }
+
+    Rectangle {
+        width: 10
+        height: 10
+        radius: 10
+        color: "red"
+        x: hoverHandler.point.position.x
+        y: hoverHandler.point.position.y
+    }
+
     TextInput {
         id: result
         Accessible.name: "result"

@@ -27,9 +27,16 @@ class PointerInputTest(unittest.TestCase):
         # The app capability may be a command line or a desktop file id.
         options.set_capability("app", f"{os.getenv('QML_EXEC')} {os.path.dirname(os.path.realpath(__file__))}/pointerinput.qml")
         options.set_capability("timeouts", {'implicit': 10000})
+        options.set_capability("environ", {
+            "QT_LOGGING_RULES": "qt.pointer*.debug=true",
+        })
         # Boilerplate, always the same
         cls.driver = webdriver.Remote(command_executor='http://127.0.0.1:4723', options=options)
         time.sleep(3)  # Make sure the window is visible
+
+    def tearDown(self) -> None:
+        if not self._outcome.result.wasSuccessful():
+            self.driver.get_screenshot_as_file(f"failed_test_shot_pointerinputtest_#{self.id()}.png")
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -50,7 +57,7 @@ class PointerInputTest(unittest.TestCase):
         self.assertEqual(element.text, "dragged")
 
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_TOUCH, "finger"))
-        action.pointer_action.move_to_location(100, 100).pointer_down().pause(3).pointer_up()
+        action.pointer_action.move_to_location(100, 100).pointer_down().pause(5).pointer_up()
         action.perform()
         self.assertEqual(element.text, "touchscreen longpressed")
 
@@ -87,11 +94,13 @@ class PointerInputTest(unittest.TestCase):
         action.perform()
         self.assertEqual(element.text, "mouse right")
 
+        time.sleep(1)
+
     def test_wheel(self) -> None:
         element = self.driver.find_element(AppiumBy.NAME, "result")
 
         action = ActionBuilder(self.driver)
-        action.wheel_action.scroll(100, 100, 0, -15)
+        action.wheel_action.scroll(101, 101, 0, -15)
         action.perform()
         self.assertEqual(element.text, "wheel 0 180")
 
