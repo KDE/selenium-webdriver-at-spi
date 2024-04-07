@@ -692,9 +692,29 @@ def session_actions(session_id):
 
     blob = json.loads(request.data)
 
+    """
+    The following is to support actions that use a specific element
+    as the origin. Instead of passing that origin to the inputsynth,
+    we instead immediately transform from the coordinate system of the
+    element to the viewport one, and then we pass that to the inputsynth.
+    """
+    try:
+        for parent_action in blob["actions"]:
+            for action in parent_action["actions"]:
+                if not ("origin" in action and isinstance(action["origin"], dict)):
+                    continue
+                element_id = next(iter(action["origin"].values()))
+                action["origin"] = "viewport"
+                element = session.elements[element_id]
+                x, y = element.queryComponent().getPosition(pyatspi.XY_SCREEN)
+                action["x"] += x
+                action["y"] += y
+    except KeyError:
+        pass
+
     if 'KWIN_PID' in os.environ:
         with tempfile.NamedTemporaryFile() as file:
-            file.write(request.data)
+            file.write(bytes(json.dumps(blob), "utf-8"))
             file.flush()
             subprocess.run(["selenium-webdriver-at-spi-inputsynth", file.name])
     else:
