@@ -48,6 +48,7 @@ Item {
     }
 
     WheelHandler {
+        orientation: Qt.Vertical | Qt.Horizontal
         onWheel: wheel => result.text = `wheel ${wheel.angleDelta.x} ${wheel.angleDelta.y}`
     }
 }
