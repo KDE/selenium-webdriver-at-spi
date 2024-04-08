@@ -105,20 +105,24 @@ void FakeInputInterface::roundtrip(bool touch)
 
 void FakeInputInterface::sendKey(const std::vector<quint32> &linuxModifiers, quint32 linuxKeyCode, wl_keyboard_key_state keyState)
 {
-    for (const auto &modifier : linuxModifiers) {
-        qDebug() << "  pressing modifier" << modifier;
-        keyboard_key(modifier, WL_KEYBOARD_KEY_STATE_PRESSED);
-        wl_display_roundtrip(m_display);
+    if (keyState == WL_KEYBOARD_KEY_STATE_PRESSED) {
+        for (const auto &modifier : linuxModifiers) {
+            qDebug() << "  pressing modifier" << modifier;
+            keyboard_key(modifier, WL_KEYBOARD_KEY_STATE_PRESSED);
+            wl_display_roundtrip(m_display);
+        }
     }
 
     qDebug() << "    key (state)" << linuxKeyCode << keyState;
     keyboard_key(linuxKeyCode, keyState);
     wl_display_roundtrip(m_display);
 
-    for (const auto &modifier : linuxModifiers) {
-        qDebug() << "  releasing modifier" << modifier;
-        keyboard_key(modifier, WL_KEYBOARD_KEY_STATE_RELEASED);
-        wl_display_roundtrip(m_display);
+    if (keyState == WL_KEYBOARD_KEY_STATE_RELEASED) {
+        for (const auto &modifier : linuxModifiers) {
+            qDebug() << "  releasing modifier" << modifier;
+            keyboard_key(modifier, WL_KEYBOARD_KEY_STATE_RELEASED);
+            wl_display_roundtrip(m_display);
+        }
     }
 }
 
