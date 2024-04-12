@@ -475,8 +475,15 @@ void PointerAction::perform()
             }
         }
         // Final round of move
-        const wl_fixed_t lastX = wl_fixed_from_int(m_pos.x());
-        const wl_fixed_t lastY = wl_fixed_from_int(m_pos.y());
+        wl_fixed_t lastX;
+        wl_fixed_t lastY;
+        if (m_pointerType == PointerKind::Mouse) {
+            lastX = wl_fixed_from_int(lastPosIt->x() + m_pos.x());
+            lastY = wl_fixed_from_int(lastPosIt->y() + m_pos.y());
+        } else {
+            lastX = wl_fixed_from_int(m_pos.x());
+            lastY = wl_fixed_from_int(m_pos.y());
+        }
         if (m_pointerType == PointerKind::Touch) {
             s_interface->touch_motion(m_uniqueId, lastX, lastY);
         } else {
