@@ -701,14 +701,33 @@ def session_actions(session_id):
     try:
         for parent_action in blob["actions"]:
             for action in parent_action["actions"]:
+
                 if not ("origin" in action and isinstance(action["origin"], dict)):
                     continue
+
                 element_id = next(iter(action["origin"].values()))
                 action["origin"] = "viewport"
                 element = session.elements[element_id]
-                x, y = element.queryComponent().getPosition(pyatspi.XY_SCREEN)
-                action["x"] += x
-                action["y"] += y
+
+                p, w, h = element, 0, 0
+                while p.parent:
+                    p = p.parent
+                    try:
+                        w, h = p.queryComponent().getSize()
+                    except NotImplementedError:
+                        break
+
+                proc = subprocess.Popen(['selenium-webdriver-at-spi-positionofapp', str(element.get_process_id()), str(w), str(h)], stdout=subprocess.PIPE)
+                out, err = proc.communicate()
+                wx, wy = map(int, out.split())
+                for i in range(20):
+                    print('XXX', out, err, element.get_process_id(), session.pid, w, h, wx, wy)
+
+                x, y = element.queryComponent().getPosition(pyatspi.XY_WINDOW)
+                print('---------------------', x, y)
+                action["x"] += x + wx
+                action["y"] += y + wy
+
     except KeyError:
         pass
 

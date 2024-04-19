@@ -51,6 +51,7 @@ pkg_check_modules(xkbcommon xkbcommon REQUIRED IMPORTED_TARGET)
 set_package_properties(xkbcommon PROPERTIES TYPE REQUIRED)
 
 add_subdirectory(appidlister)
+add_subdirectory(positionofapp)
 add_subdirectory(screenshotter)
 add_subdirectory(autotests)
 add_subdirectory(inputsynth)
