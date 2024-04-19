@@ -163,7 +163,10 @@ KeyboardAction::KeyboardAction(const QChar &key, wl_keyboard_key_state keyState)
                 if (sym != m_keysym) {
                     continue;
                 }
-                qWarning() << "found keysym";
+                qWarning() << "found keysym" << keycode << level;
+                if (m_level != XKB_LEVEL_INVALID && m_level < level) {
+                    continue;
+                }
                 m_keycode = keycode - EVDEV_OFFSET;
                 m_level = level;
                 // We found the key. As a last step we'll need to resolve the modifiers required to trigger this
