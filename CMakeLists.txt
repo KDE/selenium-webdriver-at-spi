@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # SPDX-FileCopyrightText: 2022 Harald Sitter <sitter@kde.org>
 
+cmake_minimum_required(VERSION 3.22)
 project(selenium-webdriver-at-spi)
 
-cmake_minimum_required(VERSION 3.22)
 find_package(ECM 5.99 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
 
