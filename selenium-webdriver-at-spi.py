@@ -554,6 +554,36 @@ def session_element_element(session_id, element_id):
     session.elements[unique_id] = result
     return json.dumps({'value': {'element-6066-11e4-a52e-4f735466cecf': unique_id}}), 200, {'content-type': 'application/json'}
 
+@app.route('/session/<session_id>/element/<element_id>/elements', methods=['POST'])
+def session_element_elements(session_id, element_id):
+    session = sessions[session_id]
+    if not session:
+        return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    blob = json.loads(request.data)
+    print(blob)
+    strategy = blob['using']
+    selector = blob['value']
+    if not strategy or not selector:
+        return json.dumps({'value': {'error': 'invalid argument'}}), 404, {'content-type': 'application/json'}
+
+    start = session.elements[element_id]
+    if not start:  # browsing context (no longer) valid
+        return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
+
+    results = locator(session, strategy, selector, start, findAll = True)
+
+    if not results:
+        return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
+
+    serializations = []
+    for result in results:
+        unique_id = result.path.replace('/', '-')
+        session.elements[unique_id] = result
+        serializations.append({'element-6066-11e4-a52e-4f735466cecf': unique_id})
+
+    return json.dumps({'value': serializations}), 200, {'content-type': 'application/json'}
+
 @app.route('/session/<session_id>/element/<element_id>/value', methods=['POST'])
 def session_element_value(session_id, element_id):
     session = sessions[session_id]
