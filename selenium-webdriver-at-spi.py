@@ -200,7 +200,7 @@ class Session:
                             if app.get_process_id() == self.pid:
                                 self.browsing_context = app
                                 break
-                        except gi.repository.GLib.GError:
+                        except (gi.repository.GLib.GError, AttributeError):
                             print('stumbled over a broken process. ignoring...')
                             continue
                     if self.browsing_context:
