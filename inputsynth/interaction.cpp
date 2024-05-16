@@ -21,7 +21,7 @@
 #include <QScopeGuard>
 #include <QThread>
 
-FakeInputInterface *s_interface;
+FakeInputInterface *s_interface = nullptr;
 
 QHash<unsigned /* unique id */, QPoint> PointerAction::s_positions = {};
 QSet<unsigned /*unique id*/> PointerAction::s_touchPoints = {};

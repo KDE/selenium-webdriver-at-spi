@@ -25,4 +25,11 @@ target_link_libraries(selenium-webdriver-at-spi-inputsynth
     Wayland::Client
     PkgConfig::xkbcommon
 )
+
+if(QT_MAJOR_VERSION STREQUAL "5")
+    target_link_libraries(selenium-webdriver-at-spi-inputsynth KF5::WaylandClient)
+else()
+    target_link_libraries(selenium-webdriver-at-spi-inputsynth Plasma::KWaylandClient)
+endif()
+
 install(TARGETS selenium-webdriver-at-spi-inputsynth ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})

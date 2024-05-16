@@ -5,4 +5,4 @@ Name=Input Synthesizer Authorize
 NoDisplay=true
 Exec=${CMAKE_INSTALL_PREFIX}/bin/selenium-webdriver-at-spi-inputsynth
 Type=Application
-X-KDE-Wayland-Interfaces=org_kde_kwin_fake_input
+X-KDE-Wayland-Interfaces=org_kde_kwin_fake_input,org_kde_plasma_window_management

@@ -40,7 +40,7 @@ from app_roles import ROLE_NAMES
 EVENTLOOP_TIME = 0.1
 EVENTLOOP_TIME_LONG = 0.5
 sys.stdout = sys.stderr
-sessions = {} # global dict of open sessions
+sessions: dict[str | None, pyatspi.Accessible]= {} # global dict of open sessions
 
 # Give the GUI enough time to react. tests run on the CI won't always be responsive in the tight schedule established by at-spi2 (800ms) and run risk
 # of timing out on (e.g.) click events. The second value is the timeout for app startup, we keep that the same as upstream.
@@ -222,6 +222,7 @@ class Session:
                 desired_app, None, Gio.AppInfoCreateFlags.NONE)
             appinfo.launch([], context)
         print("browsing context set to:", self.browsing_context)
+        os.environ['ATSPI_PID'] = str(self.browsing_context.get_process_id())
 
     def close(self) -> None:
         if self.launched:
@@ -655,6 +656,29 @@ def session_element_clear(session_id, element_id):
         if not processed:
             raise RuntimeError("element's actions list didn't contain SetFocus. The element may be malformed")
         return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
+
+
+@app.route('/session/<session_id>/element/<element_id>/rect', methods=['GET'])
+def session_element_rect(session_id, element_id):
+    session = sessions[session_id]
+    if not session:
+        return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    element = session.elements[element_id]
+    if not element:
+        return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
+
+    boundingBox = element.queryComponent().getExtents(pyatspi.XY_WINDOW)
+
+    if not boundingBox:
+        return json.dumps({'value': {
+            'x': boundingBox.x,
+            'y': boundingBox.y,
+            'height': boundingBox.height,
+            'width': boundingBox.width
+        }}), 200, {'content-type': 'application/json'}
+
+    return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
 
 @app.route('/session/<session_id>/appium/device/app_state', methods=['POST'])
