@@ -263,8 +263,11 @@ Dir.mktmpdir('selenium') do |xdg_home|
         end
 
         logger.info "starting test #{ARGV}"
-        IO.popen(ARGV, 'r', &:readlines)
-        ret = $?.success?
+        ret = begin
+          system(*ARGV, exception: true)
+        rescue RuntimeError # We intentionally let ENOENT raise out of this block
+          false
+        end
         logger.info 'tests done'
       end
     end
