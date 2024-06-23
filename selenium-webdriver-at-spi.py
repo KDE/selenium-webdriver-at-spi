@@ -226,8 +226,13 @@ class Session:
     def close(self) -> None:
         if self.launched:
             try:
-                os.kill(self.pid, signal.SIGKILL)
+                os.kill(self.pid, signal.SIGTERM)
+                pid, ret = os.waitpid(self.pid, 0)
+                if not pid == self.pid:
+                    os.kill(self.pid, signal.SIGKILL)
             except ProcessLookupError:
+                pass
+            except ChildProcessError:
                 pass
 
 
