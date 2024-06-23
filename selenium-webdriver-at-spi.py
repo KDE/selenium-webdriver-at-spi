@@ -226,8 +226,20 @@ class Session:
     def close(self) -> None:
         if self.launched:
             try:
-                os.kill(self.pid, signal.SIGKILL)
+                os.kill(self.pid, signal.SIGTERM)
+                closed = False
+                for _ in range(10):
+                    try:
+                        subprocess.check_call(["ps", "-p", str(self.pid)])
+                    except subprocess.CalledProcessError:
+                        closed = True
+                        break
+                    time.sleep(1)
+                if not closed:
+                    os.kill(self.pid, signal.SIGKILL)
             except ProcessLookupError:
+                pass
+            except ChildProcessError:
                 pass
 
 
