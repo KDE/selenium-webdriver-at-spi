@@ -495,6 +495,15 @@ def session_element_enabled(session_id, element_id):
     return json.dumps({'value': element.getState().contains(pyatspi.STATE_ENABLED)}), 200, {'content-type': 'application/json'}
 
 
+@app.route('/session/<session_id>/element/<element_id>/rect', methods=['GET'])
+def session_element_rect(session_id, element_id):
+    session = sessions[session_id]
+    element = session.elements[element_id]
+    x, y = element.queryComponent().getPosition(pyatspi.XY_SCREEN)
+    w, h = element.queryComponent().getSize()
+    return json.dumps({'value': {'x': x, 'y': y, 'width': w, 'height': h} }), 200, {'content-type': 'application/json'}
+
+
 @app.route('/session/<session_id>/element/<element_id>/displayed', methods=['GET'])
 def session_element_displayed(session_id, element_id):
     session = sessions[session_id]
