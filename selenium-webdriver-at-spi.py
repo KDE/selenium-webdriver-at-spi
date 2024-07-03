@@ -416,7 +416,7 @@ def session_element2(session_id=None):
     results = locator(session, strategy, selector, start, findAll = True)
 
     if not results:
-        return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
+        return json.dumps({'value': results}), 200, {'content-type': 'application/json'}
 
     serializations = []
     for result in results:
