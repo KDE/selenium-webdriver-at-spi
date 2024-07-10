@@ -163,6 +163,10 @@ class Session:
             if 'appium:environ' in blob['capabilities']['alwaysMatch']:
                 desired_environ = blob['capabilities']['alwaysMatch']['appium:environ']
 
+        if 'SELENIUM_OVERRIDE_LAUNCH' in os.environ and len(os.environ['SELENIUM_OVERRIDE_LAUNCH'].strip()) > 0:
+            desired_app = os.environ['SELENIUM_OVERRIDE_LAUNCH']
+            print(f'[INFO] Overriding app launch command with "{desired_app}"')
+
         if desired_timeouts:
             if 'script' in desired_timeouts:
                 self.timeouts['script'] = desired_timeouts['script']
