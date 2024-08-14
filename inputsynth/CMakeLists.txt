@@ -14,7 +14,10 @@ if(QT_MAJOR_VERSION EQUAL "5")
         Qt::GuiPrivate # QPlatformNativeInterface
     )
 else()
-    qt6_generate_wayland_protocol_client_sources(selenium-webdriver-at-spi-inputsynth FILES ${PLASMA_WAYLAND_PROTOCOLS_DIR}/fake-input.xml)
+    if (Qt6_VERSION VERSION_GREATER_EQUAL "6.8.0")
+        set(private_code_option  "PRIVATE_CODE")
+    endif()
+    qt6_generate_wayland_protocol_client_sources(selenium-webdriver-at-spi-inputsynth FILES ${PLASMA_WAYLAND_PROTOCOLS_DIR}/fake-input.xml ${private_code_option})
 endif()
 
 target_link_libraries(selenium-webdriver-at-spi-inputsynth

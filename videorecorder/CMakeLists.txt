@@ -22,8 +22,12 @@ if (QT_MAJOR_VERSION EQUAL "5")
         BASENAME zkde-screencast-unstable-v1
     )
 else()
+    if (Qt6_VERSION VERSION_GREATER_EQUAL "6.8.0")
+        set(private_code_option  "PRIVATE_CODE")
+    endif()
     qt6_generate_wayland_protocol_client_sources(selenium-webdriver-at-spi-recorder FILES
-        ${PLASMA_WAYLAND_PROTOCOLS_DIR}/zkde-screencast-unstable-v1.xml)
+        ${PLASMA_WAYLAND_PROTOCOLS_DIR}/zkde-screencast-unstable-v1.xml
+        ${private_code_option})
 endif()
 
 install(TARGETS selenium-webdriver-at-spi-recorder ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
