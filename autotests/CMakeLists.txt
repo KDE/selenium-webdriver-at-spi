@@ -44,7 +44,11 @@ add_test(
     NAME valuetest
     COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/valuetest.py
 )
-set_tests_properties(valuetest PROPERTIES
+add_test(
+    NAME dbustest
+    COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/valuetest.py
+)
+set_tests_properties(valuetest dbustest PROPERTIES
     TIMEOUT 60
     ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt${QT_MAJOR_VERSION}::qmake>/qml")
 

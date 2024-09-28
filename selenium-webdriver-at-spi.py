@@ -965,6 +965,25 @@ def session_appium_compare_images(session_id):
     return json.dumps({'value': return_value}), 200, {'content-type': 'application/json'}
 
 
+@app.route('/dbus/service/online', methods=['POST'])
+def dbus_service_online():
+    blob = json.loads(request.data)
+    service_name = blob['service']
+    bus_type = blob['bus']
+
+    message = Gio.DBusMessage.new_method_call("org.freedesktop.DBus", "/", "org.freedesktop.DBus", "NameHasOwner")
+    message.set_body(GLib.Variant("(s)", [service_name]))
+    if bus_type == 'system':
+        connection = Gio.bus_get_sync(Gio.BusType.SYSTEM)
+    else:
+        connection = Gio.bus_get_sync(Gio.BusType.SESSION)
+
+    reply, _ = connection.send_message_with_reply_sync(message, Gio.DBusSendMessageFlags.NONE, 5000)
+    is_online = reply and reply.get_signature() == 'b' and reply.get_body().get_child_value(0).get_boolean()
+
+    return json.dumps({'value': is_online}), 200, {'content-type': 'application/json'}
+
+
 def calculate_matched_rect(matched_points: list[tuple[int, int]]) -> dict[str, int]:
     if len(matched_points) < 2:
         return {
