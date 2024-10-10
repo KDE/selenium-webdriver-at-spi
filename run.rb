@@ -105,6 +105,8 @@ def kwin_reexec!
     ENV['XKB_DEFAULT_VARIANT'] = ''
     ENV['XKB_DEFAULT_OPTIONS'] = ''
     extra_args = []
+    extra_args << '--width=' + ENV['COMPOSITOR_WIDTH'] if ENV['COMPOSITOR_WIDTH']
+    extra_args << '--height=' + ENV['COMPOSITOR_HEIGHT'] if ENV['COMPOSITOR_HEIGHT']
     extra_args << '--virtual' if ENV['LIBGL_ALWAYS_SOFTWARE']
     extra_args << '--xwayland' if ENV.fetch('TEST_WITH_XWAYLAND', '0').to_i.positive?
     extra_args << '--no-global-shortcuts' if ENV.fetch('TEST_WITHOUT_GLOBAL_SHORTCUTS', '1').to_i.positive?
