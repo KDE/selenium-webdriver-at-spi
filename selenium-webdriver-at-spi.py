@@ -307,6 +307,10 @@ def session_source_raw(session_id):
     doc = _createNode2(session.browsing_context, None)
     return etree.tostring(doc, pretty_print=True).decode("utf-8"), 200, {'content-type': 'application/xml'}
 
+def check_requires_button_compat():
+    major, minor, _micro = pyatspi.Atspi.get_version()
+    return major > 2 or (major == 2 and minor >= 53)
+requires_button_compat = check_requires_button_compat()
 
 def locator(session, strategy, selector, start, findAll = False):
     # pyatspi.findDescendant(start, lambda x: print(x))
@@ -330,6 +334,12 @@ def locator(session, strategy, selector, start, findAll = False):
                 results.append(item)
             print("-- xml")
         else:
+            # In a thrilling turn of events [push button | foo] became [button | foo] as of at-spi 2.53. Add compatibility
+            if requires_button_compat:
+                if '[push button |' in selector:
+                    print("    --> [push button | foo] is deprecated. Please port to [button | foo]")
+                    selector = selector.replace('[push button |', '[button |')
+
             # TODO can I switch this in python +++ raise on unmapped strategy
             pred = None
             if strategy == 'accessibility id':
