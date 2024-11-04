@@ -146,6 +146,15 @@ end
 # Video recording wrapper
 class Recorder
   def self.with(&block)
+    if ARGV.include?('--selenium-record-video')
+      # Extract our own argument and the argument that follows it, then delete them so they don't mess with the
+      # actual test.
+      ENV['RECORD_VIDEO_NAME'] = ARGV[ARGV.index('--selenium-record-video') + 1]
+      ARGV.delete('--selenium-record-video')
+      ARGV.delete(ENV['RECORD_VIDEO_NAME'])
+    end
+
+    # Yield unless we are recording a video
     return block.yield unless ENV['RECORD_VIDEO_NAME']
 
     abort 'RECORD_VIDEO requires that a nested kwin wayland be used! (TEST_WITH_KWIN_WAYLAND)' unless ENV['KWIN_PID']
