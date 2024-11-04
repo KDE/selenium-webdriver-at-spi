@@ -171,7 +171,6 @@ class Recorder
       # Only start auxillary services if we are running a custom bus. Otherwise we'd mess up session services.
       pids << spawn('pipewire')
       pids << spawn('wireplumber')
-      pids << spawn(find_program('xdg-desktop-portal-kde'))
     end
     pids << spawn('selenium-webdriver-at-spi-recorder', '--output', ENV.fetch('RECORD_VIDEO_NAME'))
     5.times do
@@ -186,22 +185,6 @@ class Recorder
        (!File.exist?(ENV['RECORD_VIDEO_NAME']) || File.size(ENV['RECORD_VIDEO_NAME']) < 256_000)
       warn "recording apparently didn't work properly"
     end
-  end
-
-  def self.find_program(name)
-    @paths ||= ENV.fetch('LD_LIBRARY_PATH', '').split(':').map { |x| "#{x}/libexec" } +
-               [
-                 '/usr/lib/*/libexec/', # debian
-                 '/usr/libexec/', # suse
-                 '/usr/lib/', # arch
-                 '/usr/lib/libexec/', # arch
-               ]
-
-    @paths.each do |x|
-      path = "#{x}/#{name}"
-      return path if Dir.glob(path)&.first
-    end
-    raise "Could not resolve absolute path for #{name}; searched in #{@paths.join(', ')}"
   end
 end
 
