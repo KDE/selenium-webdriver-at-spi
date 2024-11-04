@@ -167,9 +167,12 @@ class Recorder
     sleep(5)
     FileUtils.rm_f(ENV['RECORD_VIDEO_NAME'])
     pids = []
-    pids << spawn('pipewire')
-    pids << spawn('wireplumber')
-    pids << spawn(find_program('xdg-desktop-portal-kde'))
+    if ENV.include?('CUSTOM_BUS')
+      # Only start auxillary services if we are running a custom bus. Otherwise we'd mess up session services.
+      pids << spawn('pipewire')
+      pids << spawn('wireplumber')
+      pids << spawn(find_program('xdg-desktop-portal-kde'))
+    end
     pids << spawn('selenium-webdriver-at-spi-recorder', '--output', ENV.fetch('RECORD_VIDEO_NAME'))
     5.times do
       break if File.exist?(ENV['RECORD_VIDEO_NAME'])
