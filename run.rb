@@ -187,7 +187,8 @@ class Recorder
                [
                  '/usr/lib/*/libexec/', # debian
                  '/usr/libexec/', # suse
-                 '/usr/lib/' # arch
+                 '/usr/lib/', # arch
+                 '/usr/lib/libexec/', # arch
                ]
 
     @paths.each do |x|
