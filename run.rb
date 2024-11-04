@@ -146,15 +146,17 @@ end
 # Video recording wrapper
 class Recorder
   def self.with(&block)
-    if ARGV.size == 1
-      # There is only a single argument, it should be the file name of the test to run. Let's just record as that.
-      ENV['RECORD_VIDEO_NAME'] = "appium_artifact_#{File.basename(ARGV[0])}.webm"
-    elsif ARGV.include?('--selenium-record-video')
-      # Extract our own argument and the argument that follows it, then delete them so they don't mess with the
-      # actual test.
-      ENV['RECORD_VIDEO_NAME'] = ARGV[ARGV.index('--selenium-record-video') + 1]
-      ARGV.delete('--selenium-record-video')
-      ARGV.delete(ENV['RECORD_VIDEO_NAME'])
+    if ENV['KWIN_PID'] # Only auto-record if using kwin_wayland
+      if ARGV.size == 1
+        # There is only a single argument, it should be the file name of the test to run. Let's just record as that.
+        ENV['RECORD_VIDEO_NAME'] = "appium_artifact_#{File.basename(ARGV[0])}.webm"
+      elsif ARGV.include?('--selenium-record-video')
+        # Extract our own argument and the argument that follows it, then delete them so they don't mess with the
+        # actual test.
+        ENV['RECORD_VIDEO_NAME'] = ARGV[ARGV.index('--selenium-record-video') + 1]
+        ARGV.delete('--selenium-record-video')
+        ARGV.delete(ENV['RECORD_VIDEO_NAME'])
+      end
     end
 
     # Yield unless we are recording a video
