@@ -225,6 +225,8 @@ class Session:
             appinfo = Gio.AppInfo.create_from_commandline(
                 desired_app, None, Gio.AppInfoCreateFlags.NONE)
             appinfo.launch([], context)
+        if os.environ.get("SELENIUM_DESKTOP_AS_BROWSING_CONTEXT"):
+            self.browsing_context = pyatspi.Registry.getDesktop(0)
         print("browsing context set to:", self.browsing_context)
 
     def close(self) -> None:
