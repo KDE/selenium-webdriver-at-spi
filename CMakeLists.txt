@@ -23,6 +23,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0x050e00)
 
 find_package(Qt${QT_MAJOR_VERSION} ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Core DBus WaylandClient)
+
+if (Qt6Gui_VERSION VERSION_GREATER_EQUAL "6.10.0")
+    find_package(Qt6GuiPrivate ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE)
+endif()
+
 if(QT_MAJOR_VERSION EQUAL "5")
     find_package(KF5 5.99 REQUIRED COMPONENTS WindowSystem Wayland CoreAddons)
 else()
