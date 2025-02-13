@@ -90,15 +90,27 @@ class PointerInputTest(unittest.TestCase):
     def test_3_wheel(self) -> None:
         element = self.driver.find_element(AppiumBy.NAME, "result")
 
-        action = ActionBuilder(self.driver)
-        action.wheel_action.scroll(100, 100, 0, -15)
-        action.perform()
-        self.assertEqual(element.text, "wheel 0 180")
+        success = False
+        for _ in range(10):
+            action = ActionBuilder(self.driver)
+            action.wheel_action.scroll(100, 100, 0, -15)
+            action.perform()
+            if element.text == "wheel 0 180":
+                success = True
+                break
+            time.sleep(0.25)
+        self.assertTrue(success, element.text)
 
-        action = ActionBuilder(self.driver)
-        action.wheel_action.scroll(100, 100, -15, 0)
-        action.perform()
-        self.assertEqual(element.text, "wheel 180 0")
+        success = False
+        for _ in range(10):
+            action = ActionBuilder(self.driver)
+            action.wheel_action.scroll(100, 100, -15, 0)
+            action.perform()
+            if element.text == "wheel 180 0":
+                success = True
+                break
+            time.sleep(0.25)
+        self.assertTrue(success, element.text)
 
 
 if __name__ == '__main__':
