@@ -36,7 +36,7 @@ class PointerInputTest(unittest.TestCase):
         # Make sure to terminate the driver again, lest it dangles.
         cls.driver.quit()
 
-    def test_touch(self) -> None:
+    def test_1_touch(self) -> None:
         element = self.driver.find_element(AppiumBy.NAME, "result")
 
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_TOUCH, "finger"))
@@ -59,7 +59,7 @@ class PointerInputTest(unittest.TestCase):
         action.perform()
         self.assertEqual(element.text, "dragged")
 
-    def test_mouse(self) -> None:
+    def test_2_mouse(self) -> None:
         element = self.driver.find_element(AppiumBy.NAME, "result")
 
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_MOUSE, "mouse"))
@@ -87,7 +87,7 @@ class PointerInputTest(unittest.TestCase):
         action.perform()
         self.assertEqual(element.text, "mouse right")
 
-    def test_wheel(self) -> None:
+    def test_3_wheel(self) -> None:
         element = self.driver.find_element(AppiumBy.NAME, "result")
 
         action = ActionBuilder(self.driver)
