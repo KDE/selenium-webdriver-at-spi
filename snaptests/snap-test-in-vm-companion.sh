@@ -7,21 +7,21 @@ set -euo pipefail
 
 # Constants
 readonly SELENIUM_DIR="/home/ubuntu/selenium-webdriver-at-spi"
-readonly VENV_DIR="$SELENIUM_DIR/venv"
-readonly BUILD_DIR="$SELENIUM_DIR/build"
+readonly VENV_DIR="/home/ubuntu/venv"
+readonly BUILD_DIR="/home/ubuntu/build"
 readonly MAX_WAIT_TIME=30
 readonly TEST_FILE_PATH="/home/ubuntu/test-file"
 
 show_help() {
     cat << EOF
-Usage: $0 {update-and-build-driver|run}
+Usage: $0 {build-driver|run}
 
 Commands:
-  update-and-build-driver : Update selenium-webdriver-at-spi and build
+  build-driver : build selenium-webdriver-at-spi
   run                    : Run test
 
 Examples:
-  $0 update-and-build-driver [branch]
+  $0 build-driver
   $0 run <snap name>
 EOF
 }
@@ -48,23 +48,11 @@ build_driver() {
     log_info "Building with CMake..."
     mkdir -p "$BUILD_DIR"
     cd "$BUILD_DIR"
-    cmake .. -DQT_MAJOR_VERSION=6
+    cmake "$SELENIUM_DIR" -DQT_MAJOR_VERSION=6
     make
 
     log_info "Installing..."
     sudo make install
-}
-
-update-and-build-driver() {
-    local branch=${1:-}
-
-    cd "$SELENIUM_DIR"
-    if [ -n "$branch" ]; then
-        log_info "Switching to branch: $branch"
-        git switch "$branch"
-    fi
-
-    build_driver
 }
 
 is_dbus_active() {
@@ -144,8 +132,8 @@ main() {
     shift
 
     case "$command" in
-        update-and-build-driver)
-            update-and-build-driver "$@"
+        build-driver)
+            build_driver "$@"
             ;;
         run)
             run "$@"

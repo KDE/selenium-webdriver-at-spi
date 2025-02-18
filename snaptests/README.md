@@ -19,11 +19,11 @@ Tests are run in a VM that can run in headless mode for CI for example. For debu
 ## Usage
 
 ```bash
-# Create VM and setup testing environment
-./snap-test-in-vm.sh create [selenium-web-driver-at-spi branch]
+# Create VM and setup testing environment and mount selenium-webdriver-at-spi from host
+./snap-test-in-vm.sh create
 
-# Update selenium-webdriver-at-spi in VM
-./snap-test-in-vm.sh update-driver [selenium-web-driver-at-spi branch]
+# Build selenium-webdriver-at-spi in VM
+./snap-test-in-vm.sh build-driver
 
 # Run test for a snap
 ./snap-test-in-vm.sh run <snap-file.snap> <snap-name> <test-file.py>

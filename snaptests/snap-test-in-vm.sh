@@ -53,11 +53,11 @@ readonly ENV_VARS=(
 
 show_help() {
     cat << EOF
-Usage: $0 {create|update-driver|run|run-file|delete|console}
+Usage: $0 {create|build-driver|run|run-file|delete|console}
 
 Commands:
-  create        : Create vm and setup everything to run selenium test
-  update-driver : Update selenium-webdriver-at-spi
+  create       : Create vm and setup everything to run selenium test
+  build-driver : Build selenium-webdriver-at-spi
   run          : Run a test
   run-file     : Run test from a file listing them (each line contains <snap path> <snap name> <test file url>)
   delete       : Delete the vm
@@ -67,8 +67,8 @@ Environment Variables:
   KDE_APPIUM_VM_NAME : VM instance name (default: $DEFAULT_INSTANCE_NAME)
 
 Examples:
-  $0 create [branch]
-  $0 update-driver [branch]
+  $0 create
+  $0 build-driver
   $0 run <snap path> <snap name> <test file path>
   $0 run-file <file-path>
   $0 delete
@@ -128,8 +128,8 @@ exec_root() {
 }
 
 create() {
-    local branch=${1:-}
-
+    local script_path
+    script_path="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     echo "Creating VM instance..."
     lxc launch "$VM_IMAGE" --vm \
         -c limits.cpu="$VM_CPU" \
@@ -144,23 +144,19 @@ create() {
     echo "Installing required packages..."
     exec_root apt install -qy "${REQUIRED_PACKAGES[@]}"
 
-    echo "Configuring environment..."
-    printf '%s\n' "${ENV_VARS[@]}" | exec_root bash -c 'cat >> /home/ubuntu/.profile'
+    lxc config device add "$INSTANCE_NAME" selenium-dir disk source="$script_path" path=/home/ubuntu/selenium-webdriver-at-spi/ readonly=true
 
-    echo "Cloning selenium-webdriver-at-spi..."
-    exec_user "cd /home/ubuntu && git clone https://invent.kde.org/sdk/selenium-webdriver-at-spi.git"
-    if [ -n "$branch" ]; then
-        echo "Switching to branch: $branch"
-        exec_user "cd /home/ubuntu/selenium-webdriver-at-spi && git switch $branch"
-    fi
-    update-driver
+    echo "Configuring environment..."
+    printf '%s\n' "${ENV_VARS[@]}" | exec_user bash -c 'cat >> /home/ubuntu/.profile'
+
+
+    echo "Mounting selenium-webdriver-at-spi..."
+    build-driver
 }
 
-update-driver() {
-    local branch=${1:-}
-
-    echo "Updating selenium-webdriver..."
-    run_remote update-and-build-driver "$branch"
+build-driver() {
+    echo "Building selenium-webdriver..."
+    run_remote build-driver
 }
 
 install_snap() {
@@ -247,7 +243,7 @@ main() {
     shift
 
     case "$command" in
-        create|update-driver|run|run-file|delete|console)
+        create|build-driver|run|run-file|delete|console)
             "$command" "$@"
             ;;
         *)
