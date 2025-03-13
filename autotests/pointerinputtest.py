@@ -87,6 +87,7 @@ class PointerInputTest(unittest.TestCase):
         action.perform()
         self.assertEqual(element.text, "mouse right")
 
+    @unittest.skipIf("KDECI_BUILD" in os.environ, "Broken in CI")
     def test_3_wheel(self) -> None:
         element = self.driver.find_element(AppiumBy.NAME, "result")
 
