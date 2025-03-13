@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2022 Harald Sitter <sitter@kde.org>
 
-Appium_Python_Client==3.0.0
+Appium_Python_Client==4.5.1
 Flask==3.0.0
 lxml==5.3.1
 PyGObject>=3.42.0
-selenium==4.13.0
+selenium==4.29.0
