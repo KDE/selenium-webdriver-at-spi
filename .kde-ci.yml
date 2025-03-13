@@ -21,4 +21,4 @@ Dependencies:
     'third-party/wayland': '@latest'
 
 Options:
-  require-passing-tests-on: [ 'Linux' ]
+  require-passing-tests-on: [ 'Linux/Qt6' ]
