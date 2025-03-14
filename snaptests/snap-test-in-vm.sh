@@ -209,13 +209,27 @@ run-file() {
 
     while IFS=' ' read -r snap_path app_name test_url || [ -n "$snap_path" ]; do
         [[ -z "$snap_path" || "$snap_path" =~ ^# ]] && continue
-        if ! wget -q -O "/tmp/test_file" "$test_url"; then
-            echo "Error: Failed to download test file from $test_url"
-            continue
+
+        local test_file="/tmp/test_file"
+        # Check if test_path is a URL or local file
+        if [[ "$test_url" =~ ^https?:// ]]; then
+            # It's a URL, download it
+            if ! wget -q -O "$test_file" "$test_url"; then
+                echo "Error: Failed to download test file from $test_url"
+                continue
+            fi
+        else
+            # It's a local file path, check if it exists
+            if [ ! -f "$test_url" ]; then
+                echo "Error: Local test file not found: $test_url"
+                continue
+            fi
+            # Copy the local file to temp location
+            cp "$test_url" "$test_file"
         fi
 
-        run "$snap_path" "$app_name" /tmp/test_file
-        rm /tmp/test_file
+        run "$snap_path" "$app_name" "$test_file"
+        rm "$test_file"
     done < "$TEST_LIST_FILE"
 }
 
