@@ -2,32 +2,31 @@
 # SPDX-FileCopyrightText: 2021-2023 Harald Sitter <sitter@kde.org>
 
 import base64
-from datetime import datetime, timedelta
-import numpy as np
-import tempfile
-import time
-import traceback
-from flask import Flask, request, jsonify
-import uuid
 import json
-import sys
+import logging
 import os
 import signal
 import subprocess
-from werkzeug.exceptions import HTTPException
-
-import pyatspi
-from lxml import etree
+import sys
+import tempfile
+import time
+import traceback
+import uuid
+from datetime import datetime, timedelta
+from typing import cast
 
 import gi
-from gi.repository import GLib
-from gi.repository import Gio
-gi.require_version('Gdk', '3.0')
-from gi.repository import Gdk
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+import numpy as np
+import pyatspi
+from flask import Flask, jsonify, request
+from lxml import etree
+from werkzeug.exceptions import HTTPException
 
 from app_roles import ROLE_NAMES
+
+gi.require_version('Gdk', '3.0')
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gdk, Gio, GLib, Gtk
 
 # Exposes AT-SPI as a webdriver. This is written in python because C sucks and pyatspi is a first class binding so
 # we lose nothing but gain the reduced sucking of python.
@@ -40,7 +39,9 @@ from app_roles import ROLE_NAMES
 EVENTLOOP_TIME = 0.1
 EVENTLOOP_TIME_LONG = 0.5
 sys.stdout = sys.stderr
-sessions = {} # global dict of open sessions
+sessions = {}  # global dict of open sessions
+
+logger = logging.Logger("selenium-webdriver-at-spi", logging.INFO)
 
 # Give the GUI enough time to react. tests run on the CI won't always be responsive in the tight schedule established by at-spi2 (800ms) and run risk
 # of timing out on (e.g.) click events. The second value is the timeout for app startup, we keep that the same as upstream.
@@ -48,6 +49,7 @@ pyatspi.setTimeout(4000, 15000)
 
 # Using flask because I know nothing about writing REST in python and it seemed the most straight-forward framework.
 app = Flask(__name__)
+
 
 @app.errorhandler(Exception)
 def unknown_error(e):
@@ -641,7 +643,33 @@ def session_element_value(session_id, element_id):
                 break
         if not processed:
             raise RuntimeError("element's actions list didn't contain SetFocus. The element may be malformed")
-        return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
+
+
+@app.route('/session/<session_id>/execute/sync', methods=['POST'])
+def session_execute(session_id):
+    session = sessions[session_id]
+    if not session:
+        return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
+
+    blob = json.loads(request.data)
+    script = cast(str, blob['script'])
+    args = cast(list, blob['args'])
+
+    logger.info(script)
+    logger.info(args)
+
+    match script:
+        case "mobile: getClipboard":
+            content_type = cast(str, args[0]['contentType'] if 'contentType' in args else 'plaintext')
+            data = cast(str, get_clipboard(content_type))
+            return json.dumps({'value': base64.b64encode(data.encode('utf-8')).decode('utf-8')}), 200, {'content-type': 'application/json'}
+        case "mobile: setClipboard":
+            content = args[0]['content']
+            content_type = cast(str, args[0]['contentType'])
+            set_clipboard(content, content_type)
+            return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
+
+    return json.dumps({'value': {'error': 'no such command'}}), 404, {'content-type': 'application/json'}
 
 
 @app.route('/session/<session_id>/element/<element_id>/clear', methods=['POST'])
@@ -784,25 +812,7 @@ def session_appium_device_get_clipboard(session_id):
 
     blob = json.loads(request.data)
     contentType = blob['contentType']
-
-    # NOTE: need a window because on wayland we must be the active window to manipulate the clipboard (currently anyway)
-    window = Gtk.Window()
-    window.set_default_size(20, 20)
-    window.show()
-    display = window.get_display()
-    clipboard = Gtk.Clipboard.get_for_display(display, Gdk.SELECTION_CLIPBOARD)
-
-    spin_glib_main_context()
-
-    data = None
-    if contentType == 'plaintext':
-        data = clipboard.wait_for_text()
-    else:
-        raise 'content type not currently supported'
-
-    window.close()
-
-    spin_glib_main_context()
+    data = cast(str, get_clipboard(contentType))
 
     return json.dumps({'value': base64.b64encode(data.encode('utf-8')).decode('utf-8')}), 200, {'content-type': 'application/json'}
 
@@ -817,22 +827,7 @@ def session_appium_device_set_clipboard(session_id):
     contentType = blob['contentType']
     content = blob['content']
 
-    # NOTE: need a window because on wayland we must be the active window to manipulate the clipboard (currently anyway)
-    window = Gtk.Window()
-    window.set_default_size(20, 20)
-    display = window.get_display()
-    clipboard = Gtk.Clipboard.get_for_display(display, Gdk.SELECTION_CLIPBOARD)
-
-    if contentType == 'plaintext':
-        clipboard.set_text(base64.b64decode(content).decode('utf-8'), -1)
-    else:
-        raise 'content type not currently supported'
-
-    spin_glib_main_context()
-
-    window.close()
-
-    spin_glib_main_context()
+    set_clipboard(content, contentType)
 
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
@@ -1063,6 +1058,48 @@ def char_to_keyval(ch):
     print(ord(ch))
     print(hex(keyval))
     return keyval
+
+
+def get_clipboard(content_type):
+    # NOTE: need a window because on wayland we must be the active window to manipulate the clipboard (currently anyway)
+    window = Gtk.Window()
+    window.set_default_size(20, 20)
+    window.show()
+    display = window.get_display()
+    clipboard = Gtk.Clipboard.get_for_display(display, Gdk.SELECTION_CLIPBOARD)
+
+    spin_glib_main_context()
+
+    data = None
+    if content_type == 'plaintext':
+        data = clipboard.wait_for_text()
+    else:
+        raise 'content type not currently supported'
+
+    window.close()
+
+    spin_glib_main_context()
+
+    return data
+
+
+def set_clipboard(content, content_type):
+    # NOTE: need a window because on wayland we must be the active window to manipulate the clipboard (currently anyway)
+    window = Gtk.Window()
+    window.set_default_size(20, 20)
+    display = window.get_display()
+    clipboard = Gtk.Clipboard.get_for_display(display, Gdk.SELECTION_CLIPBOARD)
+
+    if content_type == 'plaintext':
+        clipboard.set_text(base64.b64decode(content).decode('utf-8'), -1)
+    else:
+        raise 'content type not currently supported'
+
+    spin_glib_main_context()
+
+    window.close()
+
+    spin_glib_main_context()
 
 
 def spin_glib_main_context(repeat: int = 4):

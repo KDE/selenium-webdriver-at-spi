@@ -26,12 +26,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 
     add_test(
-        NAME clipboardtest
-        COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/clipboardtest.py
-    )
-    set_tests_properties(clipboardtest PROPERTIES TIMEOUT 30)
-
-    add_test(
         NAME shiftsynthesizertest
         COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/shiftsynthesizertest.rb
     )

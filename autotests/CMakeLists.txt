@@ -17,6 +17,11 @@ set_tests_properties(falsetest PROPERTIES
     ENVIRONMENT "TEST_WITH_KWIN_WAYLAND=0")
 
 add_test(
+    NAME clipboardtest
+    COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/clipboardtest.py
+)
+
+add_test(
     NAME screenshottest
     COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/screenshottest.py
 )
