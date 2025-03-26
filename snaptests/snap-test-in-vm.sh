@@ -131,11 +131,14 @@ create() {
     local script_path
     script_path="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     echo "Creating VM instance..."
-    lxc launch "$VM_IMAGE" --vm \
+    lxc init "$VM_IMAGE" --vm \
         -c limits.cpu="$VM_CPU" \
         -c limits.memory="$VM_MEMORY" \
         "$INSTANCE_NAME"
 
+    lxc config device add "$INSTANCE_NAME" selenium-dir disk source="$script_path" path=/home/ubuntu/selenium-webdriver-at-spi/ readonly=true
+    lxc start "$INSTANCE_NAME"
+    sleep 1
     wait_vm_ready || exit 1
 
     echo "Updating system packages..."
@@ -144,7 +147,7 @@ create() {
     echo "Installing required packages..."
     exec_root apt install -qy "${REQUIRED_PACKAGES[@]}"
 
-    lxc config device add "$INSTANCE_NAME" selenium-dir disk source="$script_path" path=/home/ubuntu/selenium-webdriver-at-spi/ readonly=true
+    exec_root chown ubuntu:ubuntu /home/ubuntu
 
     echo "Configuring environment..."
     printf '%s\n' "${ENV_VARS[@]}" | exec_user bash -c 'cat >> /home/ubuntu/.profile'
