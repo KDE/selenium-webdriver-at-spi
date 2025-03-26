@@ -81,7 +81,7 @@ is_vm_running() {
 }
 
 wait_vm_ready() {
-    local max_attempts=60
+    local max_attempts=180
     local attempt=0
 
     if ! is_vm_running; then
