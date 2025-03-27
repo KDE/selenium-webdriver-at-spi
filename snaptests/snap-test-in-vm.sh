@@ -81,14 +81,21 @@ is_vm_running() {
 }
 
 wait_vm_ready() {
-    local max_attempts=180
+    local max_attempts=30
     local attempt=0
 
-    if ! is_vm_running; then
+    while ! is_vm_running; do
+      ((attempt++))
+      if [ "$attempt" -ge "$max_attempts" ]; then
         echo "Error: VM '$INSTANCE_NAME' not started" >&2
         return 1
-    fi
+      fi
+      echo "Waiting for VM to be running (attempt $attempt/$max_attempts)"
+      sleep 1
+    done
 
+    max_attempts=180
+    attempt=0
     while ! lxc exec "$INSTANCE_NAME" -- sh -c "echo 'VM ready'" &>/dev/null; do
         ((attempt++))
         if [ "$attempt" -ge "$max_attempts" ]; then
@@ -98,6 +105,19 @@ wait_vm_ready() {
         echo "Waiting for VM to start... (attempt $attempt/$max_attempts)"
         sleep 1
     done
+}
+
+start_instance() {
+  local output
+  local rc
+  output=$(lxc start "$INSTANCE_NAME" 2>&1)
+  rc=$?
+  echo "$output"
+  if [ $rc -eq 0 ] || { [ $rc -eq 1 ] && [[ "$output" == *"The instance is already running"* ]]; }; then
+    wait_vm_ready || exit 1
+  else
+    exit 1
+  fi
 }
 
 wait_dbus_user_ready() {
@@ -137,9 +157,7 @@ create() {
         "$INSTANCE_NAME"
 
     lxc config device add "$INSTANCE_NAME" selenium-dir disk source="$script_path" path=/home/ubuntu/selenium-webdriver-at-spi/ readonly=true
-    lxc start "$INSTANCE_NAME"
-    sleep 1
-    wait_vm_ready || exit 1
+    start_instance
 
     echo "Updating system packages..."
     exec_root bash -c "apt update && apt upgrade -y"
@@ -183,9 +201,10 @@ run() {
 
     if ! is_vm_running; then
         echo "Starting VM..."
-        lxc start "$INSTANCE_NAME"
+        start_instance
     fi
 
+    # Wait in case vm running but not ready
     wait_vm_ready || exit 1
     wait_dbus_user_ready || exit 1
 
