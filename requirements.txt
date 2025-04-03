@@ -3,6 +3,6 @@
 
 Appium_Python_Client==4.5.1
 Flask==3.0.0
-lxml==5.3.1
+lxml>=5.0.0
 PyGObject>=3.42.0
 selenium==4.29.0
