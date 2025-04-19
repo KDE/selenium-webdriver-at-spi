@@ -204,7 +204,7 @@ class Driver
   end
 end
 
-PORT = '4723'
+PORT = ENV.fetch('FLASK_PORT', '4723')
 $stdout.sync = true # force immediate flushing without internal caching
 logger = Logger.new($stdout)
 
