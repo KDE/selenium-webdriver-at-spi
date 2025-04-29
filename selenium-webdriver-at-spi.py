@@ -365,7 +365,6 @@ def locator(session, strategy, selector, start, findAll = False):
                 accessible = pyatspi.findDescendant(start, pred)
                 if accessible:
                     results.append(accessible)
-            print(accessible)
         if len(results) > 0:
             break
 
