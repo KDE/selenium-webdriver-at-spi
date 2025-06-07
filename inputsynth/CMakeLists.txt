@@ -5,17 +5,7 @@ configure_file(org.kde.selenium-webdriver-at-spi-inputsynth.desktop.cmake ${CMAK
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/org.kde.selenium-webdriver-at-spi-inputsynth.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 
 add_executable(selenium-webdriver-at-spi-inputsynth main.cpp interaction.cpp)
-if(QT_MAJOR_VERSION EQUAL "5")
-    ecm_add_qtwayland_client_protocol(selenium-webdriver-at-spi-inputsynth
-        PROTOCOL ${PLASMA_WAYLAND_PROTOCOLS_DIR}/fake-input.xml
-        BASENAME fake-input
-    )
-    target_link_libraries(selenium-webdriver-at-spi-inputsynth
-        Qt::GuiPrivate # QPlatformNativeInterface
-    )
-else()
-    qt6_generate_wayland_protocol_client_sources(selenium-webdriver-at-spi-inputsynth FILES ${PLASMA_WAYLAND_PROTOCOLS_DIR}/fake-input.xml)
-endif()
+qt6_generate_wayland_protocol_client_sources(selenium-webdriver-at-spi-inputsynth FILES ${PLASMA_WAYLAND_PROTOCOLS_DIR}/fake-input.xml)
 
 target_link_libraries(selenium-webdriver-at-spi-inputsynth
     Qt::Core

@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(selenium-webdriver-at-spi)
 
-find_package(ECM 5.99 REQUIRED NO_MODULE)
+find_package(ECM 6.0.0 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
 
 include(FeatureSummary)
@@ -22,25 +22,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Disable legacy stuff to get rid of some deprecation warnings. Notably duplicated QProcess::finished overloads.
 add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0x050e00)
 
-find_package(Qt${QT_MAJOR_VERSION} ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Core DBus WaylandClient)
+find_package(Qt6 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Core DBus WaylandClient)
 
 if (Qt6Gui_VERSION VERSION_GREATER_EQUAL "6.10.0")
     find_package(Qt6GuiPrivate ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE)
 endif()
 
-if(QT_MAJOR_VERSION EQUAL "5")
-    find_package(KF5 5.99 REQUIRED COMPONENTS WindowSystem Wayland CoreAddons)
-else()
-    find_package(KF6 5.240 REQUIRED COMPONENTS WindowSystem CoreAddons)
-    find_package(KWayland REQUIRED)
-endif()
+find_package(KF6 6.0.0 REQUIRED COMPONENTS WindowSystem CoreAddons)
+find_package(KWayland REQUIRED)
 
 find_package(KPipeWire REQUIRED)
 find_package(Wayland REQUIRED COMPONENTS Client)
 find_package(PlasmaWaylandProtocols REQUIRED)
-if (QT_MAJOR_VERSION EQUAL "5")
-    find_package(QtWaylandScanner REQUIRED)
-endif()
 
 # Runtime Dependencies
 include(cmake/FindPythonModule.cmake)

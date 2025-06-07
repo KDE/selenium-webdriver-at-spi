@@ -8,13 +8,9 @@ add_executable(selenium-webdriver-at-spi-appidlister main.cpp)
 target_link_libraries(selenium-webdriver-at-spi-appidlister
     Qt::Core
     Qt::Gui
-    KF${QT_MAJOR_VERSION}::WindowSystem
+    KF6::WindowSystem
 )
 
-if(QT_MAJOR_VERSION STREQUAL "5")
-    target_link_libraries(selenium-webdriver-at-spi-appidlister KF5::WaylandClient)
-else()
-    target_link_libraries(selenium-webdriver-at-spi-appidlister Plasma::KWaylandClient)
-endif()
+target_link_libraries(selenium-webdriver-at-spi-appidlister Plasma::KWaylandClient)
 
 install(TARGETS selenium-webdriver-at-spi-appidlister ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})

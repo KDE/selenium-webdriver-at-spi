@@ -48,7 +48,7 @@ build_driver() {
     log_info "Building with CMake..."
     mkdir -p "$BUILD_DIR"
     cd "$BUILD_DIR"
-    cmake "$SELENIUM_DIR" -DQT_MAJOR_VERSION=6
+    cmake "$SELENIUM_DIR"
     make
 
     log_info "Installing..."

@@ -27,7 +27,7 @@ add_test(
 )
 set_tests_properties(screenshottest PROPERTIES
     TIMEOUT 60
-    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt${QT_MAJOR_VERSION}::qmake>/qml")
+    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt6::qmake>/qml")
 
 add_test(
     NAME textinputtest
@@ -35,7 +35,7 @@ add_test(
 )
 set_tests_properties(textinputtest PROPERTIES
     TIMEOUT 60
-    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt${QT_MAJOR_VERSION}::qmake>/qml")
+    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt6::qmake>/qml")
 
 add_test(
     NAME pointerinputtest
@@ -43,7 +43,7 @@ add_test(
 )
 set_tests_properties(pointerinputtest PROPERTIES
     TIMEOUT 60
-    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt${QT_MAJOR_VERSION}::qmake>/qml")
+    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt6::qmake>/qml")
 
 add_test(
     NAME valuetest
@@ -51,7 +51,7 @@ add_test(
 )
 set_tests_properties(valuetest PROPERTIES
     TIMEOUT 60
-    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt${QT_MAJOR_VERSION}::qmake>/qml")
+    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt6::qmake>/qml")
 
 add_test(
     NAME imagecomparisontest
@@ -59,7 +59,7 @@ add_test(
 )
 set_tests_properties(imagecomparisontest PROPERTIES
     TIMEOUT 60
-    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt${QT_MAJOR_VERSION}::qmake>/qml")
+    ENVIRONMENT "QML_EXEC=$<TARGET_FILE_DIR:Qt6::qmake>/qml")
 
 # These tests depend on actual applications and cannot be run by the CI currently. To enable them we'd need a way
 # to on-demand install "packages" outside the regular Dependencies system of .kde-ci.yml.

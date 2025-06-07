@@ -11,19 +11,12 @@ target_link_libraries(selenium-webdriver-at-spi-recorder
     Qt::GuiPrivate
     Qt::WaylandClient
     Qt::DBus
-    KF${QT_MAJOR_VERSION}::CoreAddons
+    KF6::CoreAddons
     Wayland::Client
     K::KPipeWireRecord
 )
 
-if (QT_MAJOR_VERSION EQUAL "5")
-    ecm_add_qtwayland_client_protocol(selenium-webdriver-at-spi-recorder
-        PROTOCOL ${PLASMA_WAYLAND_PROTOCOLS_DIR}/zkde-screencast-unstable-v1.xml
-        BASENAME zkde-screencast-unstable-v1
-    )
-else()
-    qt6_generate_wayland_protocol_client_sources(selenium-webdriver-at-spi-recorder FILES
-        ${PLASMA_WAYLAND_PROTOCOLS_DIR}/zkde-screencast-unstable-v1.xml)
-endif()
+qt6_generate_wayland_protocol_client_sources(selenium-webdriver-at-spi-recorder FILES
+    ${PLASMA_WAYLAND_PROTOCOLS_DIR}/zkde-screencast-unstable-v1.xml)
 
 install(TARGETS selenium-webdriver-at-spi-recorder ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
