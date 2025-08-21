@@ -893,8 +893,8 @@ def session_appium_compare_images(session_id):
 
     import cv2 as cv  # The extension is slow, so load it on demand
 
-    cv_image1 = cv.imdecode(np.fromstring(base64.b64decode(blob['firstImage']), np.uint8), cv.IMREAD_COLOR)
-    cv_image2 = cv.imdecode(np.fromstring(base64.b64decode(blob['secondImage']), np.uint8), cv.IMREAD_COLOR)
+    cv_image1 = cv.imdecode(np.frombuffer(base64.b64decode(blob['firstImage']), np.uint8), cv.IMREAD_COLOR)
+    cv_image2 = cv.imdecode(np.frombuffer(base64.b64decode(blob['secondImage']), np.uint8), cv.IMREAD_COLOR)
 
     if mode == 'matchFeatures':
         # https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_matcher/py_matcher.html
