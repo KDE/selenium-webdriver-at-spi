@@ -163,7 +163,7 @@ KeyboardAction::KeyboardAction(const QChar &key, wl_keyboard_key_state keyState)
                 if (sym != m_keysym) {
                     continue;
                 }
-                qWarning() << "found keysym" << keycode << level;
+                qDebug() << "found keysym" << keycode << level;
                 if (m_level != XKB_LEVEL_INVALID && m_level < level) {
                     continue;
                 }
