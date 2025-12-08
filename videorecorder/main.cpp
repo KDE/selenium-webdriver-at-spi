@@ -62,17 +62,17 @@ int main(int argc, char **argv)
         qDebug() << "state changed" << state;
         switch (state) {
         case PipeWireRecord::Idle:
-            qWarning() << "idle!" << hasStarted;
+            qDebug() << "idle!" << hasStarted;
             if (hasStarted) {
                 qGuiApp->quit();
             }
             break;
         case PipeWireRecord::Recording:
-            qWarning() << "recording...";
+            qDebug() << "recording...";
             hasStarted = true;
             break;
         case PipeWireRecord::Rendering:
-            qWarning() << "rendering...";
+            qDebug() << "rendering...";
             break;
         }
     });
