@@ -6,8 +6,8 @@
 
 #include "screencasting.h"
 
-#include <PipeWireRecord>
 #include <KSignalHandler>
+#include <PipeWireRecord>
 #include <QCommandLineParser>
 #include <QGuiApplication>
 #include <QLoggingCategory>
