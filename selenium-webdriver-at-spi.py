@@ -143,7 +143,6 @@ class Session:
         self.launched = False
 
         blob = json.loads(request.data)
-        print(request.data)
         # TODO the blob from ruby is much more complicated god only knows why
         desired_app = None
         desired_timeouts = None
@@ -198,7 +197,6 @@ class Session:
 
         def on_launched(context, info, platform_data):
             self.pid = platform_data['pid']
-            print("launched " + str(self.pid))
 
             while datetime.now() < end_time:
                 for desktop_index in range(pyatspi.Registry.getDesktopCount()):
@@ -229,7 +227,6 @@ class Session:
             appinfo = Gio.AppInfo.create_from_commandline(
                 desired_app, None, Gio.AppInfoCreateFlags.NONE)
             appinfo.launch([], context)
-        print("browsing context set to:", self.browsing_context)
 
     def close(self) -> None:
         if self.launched:
@@ -250,7 +247,6 @@ def session():
         except Exception as e:
             return errorFromException(error='session not created', exception=e), 500
         sessions[session.id] = session
-        print(sessions)
 
         if session.browsing_context is None:
             return errorFromMessage(error='session not created',
@@ -259,7 +255,7 @@ def session():
         return json.dumps({'value': {'sessionId': session.id, 'capabilities': {"app": session.browsing_context.name}}}), 200, {'content-type': 'application/json'}
     elif request.method == 'GET':
         # TODO impl
-        print(request)
+        print("GET called when not expected", request)
     elif request.method == 'DELETE':
         # TODO spec review
         return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
@@ -316,15 +312,12 @@ def check_requires_button_compat():
 requires_button_compat = check_requires_button_compat()
 
 def locator(session, strategy, selector, start, findAll = False):
-    # pyatspi.findDescendant(start, lambda x: print(x))
-
     end_time = datetime.now() + \
         timedelta(milliseconds=session.timeouts['implicit'])
     results = []
 
     while datetime.now() < end_time:
         if strategy == 'xpath':
-            print("-- xml")
             doc = _createNode2(start, None)
             for c in doc.xpath(selector):
                 path = [int(x) for x in c.get('path').split()]
@@ -335,7 +328,6 @@ def locator(session, strategy, selector, start, findAll = False):
                 if c.get('name') != item.name or c.get('description') != item.description:
                     return []
                 results.append(item)
-            print("-- xml")
         else:
             # In a thrilling turn of events [push button | foo] became [button | foo] as of at-spi 2.53. Add compatibility
             if requires_button_compat:
@@ -377,10 +369,6 @@ def session_element(session_id=None):
     # https://www.w3.org/TR/webdriver1/#dfn-find-element
 
     # TODO scope elements to session somehow when the session gets closed we can throw away the references
-    print(request.url)
-    print(session_id)
-    print(request.args)
-    print(request.data)
     session = sessions[session_id]
     blob = json.loads(request.data)
 
@@ -409,10 +397,6 @@ def session_element2(session_id=None):
     # https://www.w3.org/TR/webdriver1/#dfn-find-elements
 
     # TODO scope elements to session somehow when the session gets closed we can throw away the references
-    print(request.url)
-    print(session_id)
-    print(request.args)
-    print(request.data)
     session = sessions[session_id]
     blob = json.loads(request.data)
 
@@ -433,7 +417,6 @@ def session_element2(session_id=None):
     serializations = []
     for result in results:
         unique_id = result.path.replace('/', '-')
-        print(unique_id)
         session.elements[unique_id] = result
         serializations.append({'element-6066-11e4-a52e-4f735466cecf': unique_id})
 
@@ -457,19 +440,15 @@ def session_element_click(session_id, element_id):
 
     keys = availableActions.keys()
     if 'SetFocus' in keys: # this is used in addition to actual actions so focus is where it would be expected after a click
-        print("actioning focus")
         action.doAction(availableActions['SetFocus'])
         time.sleep(EVENTLOOP_TIME)
 
     try:
         if 'Press' in keys:
-            print("actioning press")
             action.doAction(availableActions['Press'])
         elif 'Toggle' in keys:
-            print("actioning toggle")
             action.doAction(availableActions['Toggle'])
         elif 'ShowMenu' in keys:
-            print("actioning showmenu")
             action.doAction(availableActions['ShowMenu'])
     except gi.repository.GLib.GError as e:
         print(e)
@@ -530,8 +509,6 @@ def session_element_attribute(session_id, element_id, name):
     if not element:
         return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
 
-    print(request.data)
-
     if name == "accessibility-id":
         return json.dumps({'value': element.accessibleId}), 200, {'content-type': 'application/json'}
 
@@ -542,7 +519,6 @@ def session_element_attribute(session_id, element_id, name):
         elementValue = element.queryValue()
         return json.dumps({'value': elementValue.currentValue}), 200, {'content-type': 'application/json'}
 
-    print(pyatspi.STATE_VALUE_TO_NAME)
     result = None
     for value, string in pyatspi.STATE_VALUE_TO_NAME.items():
         if string == name:
@@ -559,7 +535,6 @@ def session_element_element(session_id, element_id):
         return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
 
     blob = json.loads(request.data)
-    print(blob)
     strategy = blob['using']
     selector = blob['value']
     if not strategy or not selector:
@@ -586,7 +561,6 @@ def session_element_elements(session_id, element_id):
         return json.dumps({'value': {'error': 'no such window'}}), 404, {'content-type': 'application/json'}
 
     blob = json.loads(request.data)
-    print(blob)
     strategy = blob['using']
     selector = blob['value']
     if not strategy or not selector:
@@ -622,9 +596,6 @@ def session_element_value(session_id, element_id):
     blob = json.loads(request.data)
     text = blob['text']
 
-    print(blob)
-    print(element)
-
     try:
         offset = element.queryText().caretOffset
         textElement = element.queryEditableText()
@@ -643,6 +614,7 @@ def session_element_value(session_id, element_id):
                 break
         if not processed:
             raise RuntimeError("element's actions list didn't contain SetFocus. The element may be malformed")
+        return json.dumps({'value': None}), 404, {'content-type': 'application/json'}
 
 
 @app.route('/session/<session_id>/execute/sync', methods=['POST'])
@@ -722,7 +694,6 @@ def session_appium_device_app_state(session_id):
     out, err = proc.communicate()
 
     apps = json.loads(out)
-    print(apps)
     if appId in apps.values():
         return json.dumps({'value': 4}), 200, {'content-type': 'application/json'}
     # TODO: implement rest of codes
@@ -843,8 +814,6 @@ def session_appium_element_value(session_id, element_id):
         return json.dumps({'value': {'error': 'no such element'}}), 404, {'content-type': 'application/json'}
 
     blob = json.loads(request.data)
-    print("blob:", blob)
-    print(element)
     value = blob['text']
 
     try:
@@ -952,7 +921,6 @@ def session_appium_compare_images(session_id):
 
         matched = cv.matchTemplate(cv_image1, cv_image2, cv.TM_SQDIFF_NORMED)
         min_val, max_val, min_loc, max_loc = cv.minMaxLoc(matched)
-        print(min_val, max_val, min_loc, max_loc)
 
         if min_val <= threshold:
             x, y = min_loc
@@ -970,7 +938,6 @@ def session_appium_compare_images(session_id):
             return json.dumps({'value': {'error': 'Both images are expected to have the same size in order to calculate the similarity score.'}}), 404, {'content-type': 'application/json'}
         matched = cv.matchTemplate(cv_image1, cv_image2, cv.TM_SQDIFF_NORMED)
         min_val, max_val, min_loc, max_loc = cv.minMaxLoc(matched)
-        print(min_val, max_val, min_loc, max_loc)
         return_value['score'] = 1.0 - min_val
 
     else:
@@ -1008,7 +975,6 @@ def generate_keyboard_event_text(text):
             for ch in text:
                 actions.append({'type': 'keyDown', 'value': ch})
                 actions.append({'type': 'keyUp', 'value': ch})
-            print({'actions': {'type': 'key', 'id': 'key', 'actions': actions}})
             fp.write(json.dumps({'actions': [{'type': 'key', 'id': 'key', 'actions': actions}]}).encode())
             fp.flush()
             subprocess.run(["selenium-webdriver-at-spi-inputsynth", fp.name])
@@ -1027,7 +993,6 @@ def keyval_to_keycode(keyval):
 
 
 def char_to_keyval(ch):
-    print("----------::::::")
     keyval = Gdk.unicode_to_keyval(ord(ch))
     # I Don't know why this doesn't work, also doesn't work with \033 as input. :((
     # https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-24/gdk/gdkkeyuni.c
@@ -1055,8 +1020,6 @@ def char_to_keyval(ch):
         keyval = 0xff54 # down
     elif ch == "\ue004":
         keyval = 0xff09 # tab
-    print(ord(ch))
-    print(hex(keyval))
     return keyval
 
 
