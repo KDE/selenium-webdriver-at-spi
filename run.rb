@@ -96,6 +96,7 @@ def kwin_reexec!
 
   kwin_pid = fork do |pid|
     ENV['QT_QPA_PLATFORM'] = 'wayland'
+    ENV['QT_LOGGING_RULES'] = '*.debug=false'
     ENV['KWIN_SCREENSHOT_NO_PERMISSION_CHECKS'] = '1'
     ENV['KWIN_WAYLAND_NO_PERMISSION_CHECKS'] = '1'
     ENV['KWIN_PID'] = pid.to_s
