@@ -114,7 +114,7 @@ def kwin_reexec!
     # the __FILE__ ARGV bit, separate ARGVs to kwin_wayland would be distinct subprocesses to start but we want
     # one processes with a bunch of arguments.
     exec('kwin_wayland', '--no-lockscreen', *extra_args,
-         '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}")
+         '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}", out: File::NULL)
   end
   _pid, status = Process.waitpid2(kwin_pid)
   status.success? ? exit : abort
@@ -174,7 +174,7 @@ class Recorder
       pids << spawn('pipewire')
       pids << spawn('wireplumber')
     end
-    pids << spawn('selenium-webdriver-at-spi-recorder', '--output', ENV.fetch('RECORD_VIDEO_NAME'))
+    pids << spawn('selenium-webdriver-at-spi-recorder', '--output', ENV.fetch('RECORD_VIDEO_NAME'), out: File::NULL)
     5.times do
       break if File.exist?(ENV['RECORD_VIDEO_NAME'])
 
@@ -197,7 +197,8 @@ class Driver
     env['GDK_BACKEND'] = 'wayland' if ENV['KWIN_PID']
     pids << spawn(env,
                   'flask', 'run', '--port', PORT, '--no-reload',
-                  chdir: datadir)
+                  chdir: datadir,
+                  out: File::NULL)
     block.yield
   ensure
     terminate_pids(pids)
@@ -213,8 +214,8 @@ datadir = File.absolute_path("#{__dir__}/../share/selenium-webdriver-at-spi/")
 requirements_installed_marker = "#{Dir.tmpdir}/selenium-requirements-installed"
 if !File.exist?(requirements_installed_marker) && File.exist?("#{datadir}/requirements.txt")
   raise 'pip3 not found in PATH!' unless system('which', 'pip3')
-  unless system('pip3', 'install', '-r', 'requirements.txt', chdir: datadir)
-    unless system('pip3', 'install', '--break-system-packages', '-r', 'requirements.txt', chdir: datadir)
+  unless system('pip3', 'install', '--disable-pip-version-check', '-r', 'requirements.txt', chdir: datadir, out: File::NULL)
+    unless system('pip3', 'install', '--disable-pip-version-check', '--break-system-packages', '-r', 'requirements.txt', chdir: datadir, out: File::NULL)
       raise 'Failed to run pip3 install!'
     end
   end
