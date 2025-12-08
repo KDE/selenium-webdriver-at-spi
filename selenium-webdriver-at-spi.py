@@ -24,6 +24,8 @@ from werkzeug.exceptions import HTTPException
 
 from app_roles import ROLE_NAMES
 
+import logging
+logging.getLogger("werkzeug").disabled = True
 gi.require_version('Gdk', '3.0')
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk, Gio, GLib, Gtk
@@ -243,7 +245,6 @@ def session():
         # TODO:
         # https://www.w3.org/TR/webdriver1/#new-session
         # 1, 3, 4, 5, 8, 9, 11, 12, 13, 14
-        print(request)
         try:
             session = Session()
         except Exception as e:
