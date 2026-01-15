@@ -2,15 +2,20 @@
 # SPDX-FileCopyrightText: 2023 Harald Sitter <sitter@kde.org>
 
 # Make sure return values get forwarded properly
+
+find_program(true_program true)
+
 add_test(
     NAME truetest
-    COMMAND selenium-webdriver-at-spi-run /usr/bin/true
+    COMMAND selenium-webdriver-at-spi-run ${true_program}
 )
 set_tests_properties(truetest PROPERTIES ENVIRONMENT "TEST_WITH_KWIN_WAYLAND=0")
 
+find_program(false_program false)
+
 add_test(
     NAME falsetest
-    COMMAND selenium-webdriver-at-spi-run /usr/bin/false
+    COMMAND selenium-webdriver-at-spi-run ${false_program}
 )
 set_tests_properties(falsetest PROPERTIES
     WILL_FAIL TRUE
