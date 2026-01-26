@@ -6,9 +6,9 @@ Dependencies:
   'require':
     'frameworks/extra-cmake-modules': '@latest-kf6'
     'frameworks/kwindowsystem': '@latest-kf6'
-    'plasma/kwayland': '@latest-kf6'
-    'plasma/kwin': '@latest-kf6'
-    'plasma/kpipewire': '@latest-kf6'
+    'plasma/kwayland': '@same'
+    'plasma/kwin': '@same'
+    'plasma/kpipewire': '@same'
     'third-party/wayland': '@latest-kf6'
 
 - 'on': ['Linux/Qt5']
