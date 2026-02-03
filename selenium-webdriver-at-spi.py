@@ -214,7 +214,7 @@ class Session:
                 if self.browsing_context:
                     break
             if not self.browsing_context:
-                raise RuntimeError('Failed to find application on a11y bus within time limit!')
+                raise RuntimeError('Failed to find application on a11y bus within time limit! It either crashed, or was too slow to start, or is stuck.')
 
         context.connect("launched", on_launched)
 
