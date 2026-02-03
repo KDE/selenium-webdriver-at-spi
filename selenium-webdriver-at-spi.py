@@ -199,6 +199,7 @@ class Session:
             self.pid = platform_data['pid']
 
             while datetime.now() < end_time:
+                time.sleep(1) # do not overwhelm the bus with queries, wait a bit
                 for desktop_index in range(pyatspi.Registry.getDesktopCount()):
                     desktop = pyatspi.Registry.getDesktop(desktop_index)
                     for app in desktop:
