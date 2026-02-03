@@ -165,9 +165,6 @@ class Recorder
 
     abort 'RECORD_VIDEO requires that a nested kwin wayland be used! (TEST_WITH_KWIN_WAYLAND)' unless ENV['KWIN_PID']
 
-    # Make sure kwin is up. This can be removed once the code was changed to re-exec as part of a kwin
-    # subprocess, then the wayland server is ready by the time we get re-executed.
-    sleep(5)
     FileUtils.rm_f(ENV['RECORD_VIDEO_NAME'])
     pids = []
     if ENV.include?('CUSTOM_BUS')
@@ -175,11 +172,19 @@ class Recorder
       pids << spawn('pipewire')
       pids << spawn('wireplumber')
     end
-    pids << spawn('selenium-webdriver-at-spi-recorder', '--output', ENV.fetch('RECORD_VIDEO_NAME'), out: File::NULL)
-    5.times do
+    20.times do # make sure pipewire is up and kwin is connected already, otherwise recording will definitely fail
+      break if system('pw-dump | grep -q kwin_wayland')
+      sleep(1)
+    end
+    pids << spawn('selenium-webdriver-at-spi-recorder', '--output', ENV.fetch('RECORD_VIDEO_NAME'))
+    20.times do
       break if File.exist?(ENV['RECORD_VIDEO_NAME'])
 
       sleep(1)
+    end
+    unless File.exist?(ENV['RECORD_VIDEO_NAME'])
+      warn "Video recording didn't start properly, file was not created #{ENV['RECORD_VIDEO_NAME']}"
+      abort "Failed to start video recording. Please talk to sitter!"
     end
     block.yield
   ensure
