@@ -139,7 +139,7 @@ def dbus_reexec!(logger:)
   _pid, status = Process.waitpid2(pid)
   terminate_pgids([pgid])
   logger.info('dbus session ended')
-  system('ps fja')
+  system('ps fja', out: "appium_artifact_#{File.basename(ARGV[0])}_ps_stdout.log")
   status.success? ? exit : abort
 end
 
