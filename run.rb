@@ -115,7 +115,7 @@ def kwin_reexec!
     # the __FILE__ ARGV bit, separate ARGVs to kwin_wayland would be distinct subprocesses to start but we want
     # one processes with a bunch of arguments.
     exec('kwin_wayland', '--no-lockscreen', *extra_args,
-         '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}", out: File::NULL)
+         '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}", out: "appium_artifact_#{File.basename(ARGV[0])}_kwin_stdout.log")
   end
   _pid, status = Process.waitpid2(kwin_pid)
   status.success? ? exit : abort
@@ -204,7 +204,7 @@ class Driver
     pids << spawn(env,
                   'flask', 'run', '--port', PORT, '--no-reload',
                   chdir: datadir,
-                  out: File::NULL)
+                  out: "appium_artifact_#{File.basename(ARGV[0])}_webdriver_stdout.log")
     block.yield
   ensure
     terminate_pids(pids)
