@@ -14,6 +14,7 @@
 #include <QLoggingCategory>
 #include <QScreen>
 #include <QThread>
+#include <QTimer>
 
 #include <csignal>
 
@@ -102,6 +103,21 @@ private:
             });
             return screencasting;
         }())
+        , m_startTimer([this] {
+            auto timer = new QTimer(this);
+            timer->setSingleShot(true);
+            constexpr auto maximumStartDelay = 2000ms; // arbitrary
+            timer->setInterval(maximumStartDelay);
+            connect(timer, &QTimer::timeout, this, [this] {
+                if (m_hasStarted) {
+                    return;
+                }
+                qWarning() << "Timeout waiting for screencasting to start!. Trying again...";
+                Context::reset(m_output);
+            });
+            timer->start();
+            return timer;
+        }())
     {
         connect(KSignalHandler::self(), &KSignalHandler::signalReceived, this, [this] {
             m_record->stop();
@@ -112,6 +128,7 @@ private:
     QString m_output;
     PipeWireRecord *m_record;
     Screencasting *m_screencasting;
+    QTimer *m_startTimer;
 };
 
 int main(int argc, char **argv)
