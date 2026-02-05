@@ -146,6 +146,7 @@ end
 # Video recording wrapper
 class Recorder
   def self.with(&block)
+    pids = []
     if ENV['KWIN_PID'] # Only auto-record if using kwin_wayland
       if ARGV.size >= 1
         # There is at least one argument, it should be the file name of the test to run. Let's just record as that.
@@ -164,33 +165,54 @@ class Recorder
 
     abort 'RECORD_VIDEO requires that a nested kwin wayland be used! (TEST_WITH_KWIN_WAYLAND)' unless ENV['KWIN_PID']
 
-    FileUtils.rm_f(ENV['RECORD_VIDEO_NAME'])
-    pids = []
+    recording = ENV.fetch('RECORD_VIDEO_NAME')
+    start_marker = "#{recording}.started"
+
+    FileUtils.rm_f(recording)
+    FileUtils.rm_f(start_marker)
+
     if ENV.include?('CUSTOM_BUS')
       # Only start auxillary services if we are running a custom bus. Otherwise we'd mess up session services.
       pids << spawn('pipewire')
       pids << spawn('wireplumber')
     end
+
     20.times do # make sure pipewire is up and kwin is connected already, otherwise recording will definitely fail
       break if system('pw-dump | grep -q kwin_wayland')
-      sleep(1)
-    end
-    pids << spawn('selenium-webdriver-at-spi-recorder', '--output', ENV.fetch('RECORD_VIDEO_NAME'))
-    20.times do
-      break if File.exist?(ENV['RECORD_VIDEO_NAME'])
 
       sleep(1)
     end
-    unless File.exist?(ENV['RECORD_VIDEO_NAME'])
-      warn "Video recording didn't start properly, file was not created #{ENV['RECORD_VIDEO_NAME']}"
+
+    pids << spawn('selenium-webdriver-at-spi-recorder', '--output', recording)
+
+    20.times do
+      break if File.exist?(start_marker)
+
+      sleep(1)
+    end
+
+    unless File.exist?(start_marker)
+      warn "Video recording didn't start properly, file was not created #{start_marker}"
       abort "Failed to start video recording. Please talk to sitter!"
     end
+
     block.yield
+
   ensure
+    # mind that we may skip out of the block above before defining certain variables. Be mindful of what may be undefined.
     terminate_pids(pids)
-    if ENV['RECORD_VIDEO_NAME'] &&
-       (!File.exist?(ENV['RECORD_VIDEO_NAME']) || File.size(ENV['RECORD_VIDEO_NAME']) < 256_000)
-      warn "recording apparently didn't work properly"
+
+    if recording # may be undefined if no recording is requested
+      unless File.exist?(recording)
+        warn "Video recording didn't finish properly, file was not created #{recording}"
+        abort "Failed to stop video recording. Please talk to sitter!"
+      end
+
+      recording_exists = File.exist?(recording)
+      recording_looks_valid = (File.size(recording) < 1024)
+      if !recording_exists || !recording_looks_valid
+        warn "recording apparently didn't work properly"
+      end
     end
   end
 end

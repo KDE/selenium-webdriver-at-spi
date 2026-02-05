@@ -9,6 +9,7 @@
 #include <KSignalHandler>
 #include <PipeWireRecord>
 #include <QCommandLineParser>
+#include <QFile>
 #include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QScreen>
@@ -17,6 +18,7 @@
 #include <csignal>
 
 using namespace std::chrono_literals;
+using namespace Qt::StringLiterals;
 using namespace KWayland::Client;
 
 class Context : public QObject
@@ -56,10 +58,18 @@ private:
                         qGuiApp->quit();
                     }
                     break;
-                case PipeWireRecord::Recording:
+                case PipeWireRecord::Recording: {
                     qDebug() << "recording...";
                     m_hasStarted = true;
+                    QFile startedMarker(m_output + ".started"_L1);
+                    if (startedMarker.open(QFile::WriteOnly)) {
+                        startedMarker.close();
+                    } else {
+                        qWarning() << "Could not create started marker file!";
+                        qGuiApp->exit(4);
+                    }
                     break;
+                }
                 case PipeWireRecord::Rendering:
                     constexpr auto maxRetries = 8;
                     static auto retryCount = maxRetries;
