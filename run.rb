@@ -234,6 +234,7 @@ end
 
 PORT = ENV.fetch('FLASK_PORT', '4723')
 $stdout.sync = true # force immediate flushing without internal caching
+ENV['PYTHONUNBUFFERED'] = '0' # same for python subprocesses
 logger = Logger.new($stdout)
 
 logger.info 'Installing dependencies'
