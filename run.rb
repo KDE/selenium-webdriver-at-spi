@@ -241,8 +241,10 @@ datadir = File.absolute_path("#{__dir__}/../share/selenium-webdriver-at-spi/")
 requirements_installed_marker = "#{Dir.tmpdir}/selenium-requirements-installed"
 if !File.exist?(requirements_installed_marker) && File.exist?("#{datadir}/requirements.txt")
   raise 'pip3 not found in PATH!' unless system('which', 'pip3')
-  unless system('pip3', 'install', '--disable-pip-version-check', '-r', 'requirements.txt', chdir: datadir, out: File::NULL)
-    unless system('pip3', 'install', '--disable-pip-version-check', '--break-system-packages', '-r', 'requirements.txt', chdir: datadir, out: File::NULL)
+  unless system('pip3', 'install', '--disable-pip-version-check', '-r', 'requirements.txt', chdir: datadir,
+                out: "appium_artifact_#{File.basename(ARGV[0])}_pip_stdout.log", err: "appium_artifact_#{File.basename(ARGV[0])}_pip_stderr.log")
+    unless system('pip3', 'install', '--disable-pip-version-check', '--break-system-packages', '-r', 'requirements.txt',
+                  chdir: datadir, out: "appium_artifact_#{File.basename(ARGV[0])}_pip-break_stdout.log")
       raise 'Failed to run pip3 install!'
     end
   end
