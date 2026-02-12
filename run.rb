@@ -254,6 +254,21 @@ if !File.exist?(requirements_installed_marker) && File.exist?("#{datadir}/requir
   end
 end
 
+if ENV['KDECI_BUILD'] == 'TRUE' && !ENV['KDECI_PLATFORM_PATH'].include?('alpine')
+  # Prefer using systemd managed services. It's faster and more reliable than doing this manually.
+  # ci-utilities mangles the environment - unmangle it so systemctl actually manages to talk to the daemon instance.
+  ENV['DBUS_SESSION_BUS_ADDRESS'] = "unix:path=/run/user/#{`id -u`.strip}/bus"
+  ENV['XDG_RUNTIME_DIR'] = "/run/user/#{`id -u`.strip}"
+  logger.info 'Starting user services via systemd'
+  for service in ['at-spi-dbus-bus.service', 'pipewire.socket', 'wireplumber.service']
+    system('systemctl', '--user', 'start', service) || raise("Failed to start #{service} via systemd!")
+  end
+end
+
+# Just in case the environment is a bit incomplete and doesn't have the dir created. Not having the dir breaks assumptions
+# in some software.
+FileUtils.mkdir_p(ENV['XDG_RUNTIME_DIR'])
+
 ENV['PATH'] = "#{Dir.home}/.local/bin:#{ENV.fetch('PATH')}"
 
 ret = false
