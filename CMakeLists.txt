@@ -65,6 +65,7 @@ configure_package_config_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/SeleniumWebDriverATSPIConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/SeleniumWebDriverATSPIConfig.cmake
     INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+    PATH_VARS KDE_INSTALL_BINDIR
 )
 
 install(

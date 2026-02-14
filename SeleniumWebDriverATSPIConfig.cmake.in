@@ -17,3 +17,5 @@ find_pythonmodule(lxml)
 find_pythonmodule(gi)
 
 # TODO GIR typelibs not being looked for
+
+set(SELENIUM_WEBDRIVER_AT_SPI_RUN_PATH "@PACKAGE_KDE_INSTALL_BINDIR@/selenium-webdriver-at-spi-run")
