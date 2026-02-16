@@ -215,7 +215,7 @@ class Recorder
       recording_exists = File.exist?(recording)
       recording_looks_valid = (File.size(recording) >= 1024)
       if !recording_exists || !recording_looks_valid
-        warn "recording apparently didn't work properly #{recording} exists: #{recording_exists}, size: #{File.size(recording)} #{recording_looks_valid}"
+        warn "recording apparently didn't work properly #{recording} exists: #{recording_exists}, size: #{File.size(recording)} #{recording_looks_valid}. Talk to sitter!"
       end
     end
   end
