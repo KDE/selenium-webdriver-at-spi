@@ -9,7 +9,11 @@ require 'logger'
 require 'shellwords'
 require 'tmpdir'
 
+SYSTEMD_ASSISTED_CI = ENV['KDECI_BUILD'] == 'TRUE' && !ENV['KDECI_PLATFORM_PATH'].include?('alpine')
+
 def at_bus_exists?
+  return true if SYSTEMD_ASSISTED_CI # when managed by systemd it may be lazily started
+
   IO.popen(['dbus-send', '--print-reply=literal', '--dest=org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus.ListNames'], 'r') do |io|
     io.read.include?('org.a11y.Bus')
   end
@@ -257,7 +261,7 @@ if !File.exist?(requirements_installed_marker) && File.exist?("#{datadir}/requir
   end
 end
 
-if ENV['KDECI_BUILD'] == 'TRUE' && !ENV['KDECI_PLATFORM_PATH'].include?('alpine')
+if SYSTEMD_ASSISTED_CI
   # Prefer using systemd managed services. It's faster and more reliable than doing this manually.
   # ci-utilities mangles the environment - unmangle it so systemctl actually manages to talk to the daemon instance.
   ENV['DBUS_SESSION_BUS_ADDRESS'] = "unix:path=/run/user/#{`id -u`.strip}/bus"
