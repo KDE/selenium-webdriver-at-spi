@@ -330,8 +330,11 @@ Dir.mktmpdir('selenium') do |xdg_home|
               end
         logger.info 'tests done'
       end
+      system('ps fja', out: "appium_artifact_#{File.basename(ARGV[0])}_ps_after_driver_stdout.log")
     end
+    system('ps fja', out: "appium_artifact_#{File.basename(ARGV[0])}_ps_after_recorder_stdout.log")
   end
+  system('ps fja', out: "appium_artifact_#{File.basename(ARGV[0])}_ps_after_atspi_stdout.log")
 end
 
 logger.info "run.rb exiting #{ret}"
