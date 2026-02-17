@@ -328,9 +328,15 @@ Dir.mktmpdir('selenium') do |xdg_home|
               rescue RuntimeError # We intentionally let ENOENT raise out of this block
                 false
               end
-        # terminate the whole process group to try and make sure we also kill subprocesses of the test it hadn't cleaned up
-        test_proc = $?
-        Process.kill('TERM', -test_proc.pid)
+
+        begin
+          # terminate the whole process group to try and make sure we also kill subprocesses of the test it hadn't cleaned up
+          test_proc = $?
+          Process.kill('TERM', -test_proc.pid)
+        rescue Errno::ESRCH
+          # group already dead, nothing to do
+        end
+
         logger.info 'tests done'
       end
       system('ps aux', out: "appium_artifact_#{File.basename(ARGV[0])}_ps_after_driver_stdout.log")
