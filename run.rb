@@ -127,6 +127,13 @@ end
 def dbus_reexec!(logger:)
   return if ENV.include?('CUSTOM_BUS') # already inside a nested bus
 
+  if SYSTEMD_ASSISTED_CI
+    if ENV.fetch('USE_CUSTOM_BUS', '0').to_i != 0
+      logger.info('running in systemd assisted CI, relying on systemd user services. Ignoring USE_CUSTOM_BUS')
+    end
+    return
+  end
+
   if ENV.fetch('USE_CUSTOM_BUS', '0').to_i.zero? && # not explicitly enabled
      at_bus_exists? # already have an a11y bus, use it
 
