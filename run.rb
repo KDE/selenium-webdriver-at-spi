@@ -324,10 +324,13 @@ Dir.mktmpdir('selenium') do |xdg_home|
 
         logger.info "starting test #{ARGV}"
         ret = begin
-                system(*ARGV, exception: true)
+                system(*ARGV, exception: true, pgroup: true)
               rescue RuntimeError # We intentionally let ENOENT raise out of this block
                 false
               end
+        # terminate the whole process group to try and make sure we also kill subprocesses of the test it hadn't cleaned up
+        test_proc = $?
+        Process.kill('TERM', -test_proc.pid)
         logger.info 'tests done'
       end
       system('ps aux', out: "appium_artifact_#{File.basename(ARGV[0])}_ps_after_driver_stdout.log")

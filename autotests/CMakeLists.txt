@@ -21,6 +21,16 @@ set_tests_properties(falsetest PROPERTIES
     WILL_FAIL TRUE
     ENVIRONMENT "TEST_WITH_KWIN_WAYLAND=0")
 
+# The test forks a process that doesn't get terminated
+find_program(sleep_program sleep)
+add_test(
+    NAME processleaktest
+    COMMAND selenium-webdriver-at-spi-run sh -c "${sleep_program} 8&"
+)
+set_tests_properties(processleaktest PROPERTIES
+    TIMEOUT 4
+    ENVIRONMENT "TEST_WITH_KWIN_WAYLAND=0")
+
 add_test(
     NAME clipboardtest
     COMMAND selenium-webdriver-at-spi-run ${CMAKE_CURRENT_SOURCE_DIR}/clipboardtest.py
