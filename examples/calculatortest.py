@@ -33,7 +33,7 @@ class SimpleCalculatorTests(unittest.TestCase):
         self.driver.quit()
 
     def setUp(self):
-        self.driver.find_element(by=AppiumBy.NAME, value="AC").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="All clear").click()
         wait = WebDriverWait(self.driver, 20)
         wait.until(lambda x: self.getresults() == "0")
 
@@ -51,55 +51,55 @@ class SimpleCalculatorTests(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_initialize(self):
-        self.driver.find_element(by=AppiumBy.NAME, value="AC").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="7").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="All clear").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Seven").click()
         self.assertResult("7")
 
     def test_addition(self):
-        self.driver.find_element(by=AppiumBy.NAME, value="1").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="+").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="7").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="=").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="One").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Add").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Seven").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Equals").click()
         self.assertResult("8")
 
     def test_combination(self):
-        self.driver.find_element(by=AppiumBy.NAME, value="7").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="×").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="9").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="+").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="1").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="=").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="÷").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="8").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="=").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Seven").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Multiply").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Nine").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Add").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="One").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Equals").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Divide").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Eight").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Equals").click()
         self.assertResult("8")
 
     def test_division(self):
         # Using find element by name twice risks the driver finding the
         # result display text rather than finding the button. To avoid
         # that, execute the call once and store that as a local value.
-        button8 = self.driver.find_element(by=AppiumBy.NAME, value="8")
+        button8 = self.driver.find_element(by=AppiumBy.NAME, value="Eight")
         button8.click()
         button8.click()
-        self.driver.find_element(by=AppiumBy.NAME, value="÷").click()
-        button1 = self.driver.find_element(by=AppiumBy.NAME, value="1")
+        self.driver.find_element(by=AppiumBy.NAME, value="Divide").click()
+        button1 = self.driver.find_element(by=AppiumBy.NAME, value="One")
         button1.click()
         button1.click()
-        self.driver.find_element(by=AppiumBy.NAME, value="=").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Equals").click()
         self.assertResult("8")
 
     def test_multiplication(self):
-        self.driver.find_element(by=AppiumBy.NAME, value="9").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="×").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="9").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="=").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Nine").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Multiply").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Nine").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Equals").click()
         self.assertResult("81")
 
     def test_subtraction(self):
-        self.driver.find_element(by=AppiumBy.NAME, value="9").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="−").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="1").click()
-        self.driver.find_element(by=AppiumBy.NAME, value="=").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Nine").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Subtract").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="One").click()
+        self.driver.find_element(by=AppiumBy.NAME, value="Equals").click()
         self.assertResult("8")
 
 
