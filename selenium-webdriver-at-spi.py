@@ -215,9 +215,24 @@ class Session:
                 if self.browsing_context:
                     break
             if not self.browsing_context:
-                raise RuntimeError('Failed to find application on a11y bus within time limit! It either crashed, or was too slow to start, or is stuck.')
+                def is_running(pid):
+                    try:
+                        os.kill(pid, 0)
+                        return True
+                    except OSError:
+                        return False
+
+                if not is_running(self.pid):
+                    raise RuntimeError(f'Application with pid {self.pid} is not running anymore! It probably crashed or errored out')
+
+                raise RuntimeError('Failed to find application on a11y bus within time limit! The pid is still active though.' \
+                                   ' It is stuck or too slow to start or encountered a non-fatal runtime error.')
+
+        def on_launch_failed(*args):
+            raise RuntimeError(f'Application failed to launch! Args: {args}')
 
         context.connect("launched", on_launched)
+        context.connect("launch-failed", on_launch_failed)
 
         if desired_app.endswith(".desktop"):
             appinfo = Gio.DesktopAppInfo.new(desired_app)
@@ -250,6 +265,9 @@ def session():
         sessions[session.id] = session
 
         if session.browsing_context is None:
+            if sys.last_exc:
+                return errorFromException(error='session not created', exception=sys.last_exc), 500
+
             return errorFromMessage(error='session not created',
                                     message='Application was not found on the a11y bus for unknown reasons. It probably failed to register on the bus.'), 500
 
