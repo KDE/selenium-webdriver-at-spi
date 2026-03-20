@@ -13,6 +13,7 @@ from appium.options.common.base import AppiumOptions
 from appium.webdriver.common.appiumby import AppiumBy
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.keys import Keys
 
 class TextInputTest(unittest.TestCase):
 
@@ -59,6 +60,13 @@ class TextInputTest(unittest.TestCase):
         WebDriverWait(self.driver, 4).until(lambda x: element.text == "123456")
         element.clear()
 
+    def test_enter(self):
+        element = self.driver.find_element(AppiumBy.NAME, "input")
+        element.send_keys("hello\nmister")
+        element.send_keys(Keys.ENTER)
+
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "accepted")
+        element.clear()
 
 if __name__ == '__main__':
     unittest.main()
