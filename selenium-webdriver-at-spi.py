@@ -38,6 +38,8 @@ from gi.repository import Gdk, Gio, GLib, Gtk
 # https://github.com/microsoft/WinAppDriver/blob/master/Docs/SupportedAPIs.md
 # https://www.freedesktop.org/wiki/Accessibility/PyAtSpi2Example/
 
+class SeleniumSpecialKeyError(RuntimeError): ...
+
 EVENTLOOP_TIME = 0.1
 EVENTLOOP_TIME_LONG = 0.5
 sys.stdout = sys.stderr
@@ -69,6 +71,13 @@ def status():
         }
     }
     return json.dumps(body), 200, {'content-type': 'application/json'}
+
+
+def maybe_special_key_error(text):
+    for c in text:
+        if c >= '\ue000': # first selenium special key
+            raise SeleniumSpecialKeyError("special keys not supported in direct text input")
+    return
 
 
 def _createNode2(accessible, parentElement, indexInParents=[]):
@@ -598,12 +607,13 @@ def session_element_value(session_id, element_id):
     text = blob['text']
 
     try:
+        maybe_special_key_error(text)
         offset = element.queryText().caretOffset
         textElement = element.queryEditableText()
         textElement.insertText(offset, text, len(text))
         return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
-    except NotImplementedError:
-        print("element is not text type, falling back to synthesizing keyboard events")
+    except (SeleniumSpecialKeyError, NotImplementedError) as e:
+        print(f"falling back to synthesizing keyboard events: {e if str(e) else 'item does not support text input'}")
         action = element.queryAction()
         processed = False
         for i in range(0, action.nActions):

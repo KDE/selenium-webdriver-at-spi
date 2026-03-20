@@ -5,4 +5,6 @@ import QtQuick 2.15
 
 TextInput {
     Accessible.name: "input"
+
+    onAccepted: text = "accepted"
 }
