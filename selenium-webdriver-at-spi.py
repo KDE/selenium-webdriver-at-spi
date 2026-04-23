@@ -781,7 +781,7 @@ def session_actions(session_id):
             file.flush()
             subprocess.run(["selenium-webdriver-at-spi-inputsynth", file.name])
     else:
-        raise RuntimeError("actions only work with nested kwin!")
+        raise RuntimeError("actions only work with nested kwin, or with the parent kwin pid passed in to KWIN_PID manually!")
 
     return json.dumps({'value': None}), 200, {'content-type': 'application/json'}
 
