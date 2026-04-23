@@ -157,6 +157,9 @@ end
 # Video recording wrapper
 class Recorder
   def self.with(&block)
+    # Yield if we don't want to record video
+    return block.yield if ENV['TEST_WITH_VIDEO_RECORDER'] == '0'
+
     pids = []
     if ENV['KWIN_PID'] # Only auto-record if using kwin_wayland
       if ARGV.size >= 1
@@ -243,6 +246,23 @@ class Driver
   end
 end
 
+# Manages the XDG home directory for the test run. If TEST_WITH_CLEAN_HOME is set to 0,
+# the existing home is used as-is. Otherwise a throw-away XDG home is created so the test
+# starts with a clean slate with every run, and doesn't mess with your local installation.
+class CleanHome
+  def self.with(&block)
+    return block.yield if ENV['TEST_WITH_CLEAN_HOME'] == '0'
+
+    Dir.mktmpdir('selenium') do |xdg_home|
+      %w[CACHE CONFIG DATA STATE].each do |d|
+        Dir.mkdir("#{xdg_home}/#{d}")
+        ENV["XDG_#{d}_HOME"] = "#{xdg_home}/#{d}"
+      end
+      block.yield
+    end
+  end
+end
+
 PORT = ENV.fetch('FLASK_PORT', '4723')
 $stdout.sync = true # force immediate flushing without internal caching
 ENV['PYTHONUNBUFFERED'] = '0' # same for python subprocesses
@@ -287,14 +307,7 @@ ENV['PATH'] = "#{Dir.home}/.local/bin:#{ENV.fetch('PATH')}"
 
 ret = false
 
-# create a throw-away XDG home, so the test starts with a clean slate
-# with every run, and doesn't mess with your local installation
-Dir.mktmpdir('selenium') do |xdg_home|
-  %w[CACHE CONFIG DATA STATE].each do |d|
-    Dir.mkdir("#{xdg_home}/#{d}")
-    ENV["XDG_#{d}_HOME"] = "#{xdg_home}/#{d}"
-  end
-
+CleanHome.with do
   dbus_reexec!(logger: logger)
   kwin_reexec!
   if ENV['KDECI_BUILD'] == 'TRUE'
@@ -324,20 +337,18 @@ Dir.mktmpdir('selenium') do |xdg_home|
 
         logger.info "starting test #{ARGV}"
         ret = begin
-                system(*ARGV, exception: true, pgroup: true)
-              rescue RuntimeError # We intentionally let ENOENT raise out of this block
-                false
-              end
-
-        begin
-          # terminate the whole process group to try and make sure we also kill subprocesses of the test it hadn't cleaned up
-          test_proc = $?
-          Process.kill('TERM', -test_proc.pid)
-        rescue Errno::ESRCH
-          # group already dead, nothing to do
-        end
-
-        logger.info 'tests done'
+        system(*ARGV, exception: true, pgroup: true)
+      rescue RuntimeError # We intentionally let ENOENT raise out of this block
+        false
+      end
+      begin
+        # terminate the whole process group to try and make sure we also kill subprocesses of the test it hadn't cleaned up
+        test_proc = $?
+        Process.kill('TERM', -test_proc.pid)
+      rescue Errno::ESRCH
+        # group already dead, nothing to do
+      end
+      logger.info 'tests done'
       end
     end
   end
