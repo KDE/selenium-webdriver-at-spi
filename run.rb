@@ -10,6 +10,9 @@ require 'shellwords'
 require 'tmpdir'
 
 SYSTEMD_ASSISTED_CI = ENV['KDECI_BUILD'] == 'TRUE' && !ENV['KDECI_PLATFORM_PATH'].include?('alpine')
+# APPIUM_ARTIFACT_OUTPUT_PATH environment variable allows setting an arbitrary
+# directory for artifact files, rather than the working directory
+ARTIFACT_OUTPUT_DIR = File.expand_path(ENV.fetch('APPIUM_ARTIFACT_OUTPUT_PATH', '.')).freeze
 
 def at_bus_exists?
   return true if SYSTEMD_ASSISTED_CI # when managed by systemd it may be lazily started
@@ -41,6 +44,11 @@ def terminate_pids(pids)
     Process.kill('TERM', pid)
     Process.waitpid(pid)
   end
+end
+
+def artifact_path(filename)
+  FileUtils.mkdir_p(ARTIFACT_OUTPUT_DIR)
+  File.join(ARTIFACT_OUTPUT_DIR, filename)
 end
 
 class ATSPIBus
@@ -118,7 +126,7 @@ def kwin_reexec!
     # the __FILE__ ARGV bit, separate ARGVs to kwin_wayland would be distinct subprocesses to start but we want
     # one processes with a bunch of arguments.
     exec('kwin_wayland', '--no-lockscreen', *extra_args,
-         '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}", out: "appium_artifact_#{File.basename(ARGV[0])}_kwin_stdout.log")
+         '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}", out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_kwin_stdout.log"))
   end
   _pid, status = Process.waitpid2(kwin_pid)
   status.success? ? exit : abort
@@ -150,7 +158,7 @@ def dbus_reexec!(logger:)
   _pid, status = Process.waitpid2(pid)
   terminate_pgids([pgid])
   logger.info('dbus session ended')
-  system('ps fja', out: "appium_artifact_#{File.basename(ARGV[0])}_ps_stdout.log")
+  system('ps fja', out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_ps_stdout.log"))
   status.success? ? exit : abort
 end
 
@@ -164,7 +172,7 @@ class Recorder
     if ENV['KWIN_PID'] # Only auto-record if using kwin_wayland
       if ARGV.size >= 1
         # There is at least one argument, it should be the file name of the test to run. Let's just record as that.
-        ENV['RECORD_VIDEO_NAME'] = "appium_artifact_#{File.basename(ARGV[0])}.webm"
+        ENV['RECORD_VIDEO_NAME'] = artifact_path("appium_artifact_#{File.basename(ARGV[0])}.webm")
       elsif ARGV.include?('--selenium-record-video')
         # Extract our own argument and the argument that follows it, then delete them so they don't mess with the
         # actual test.
@@ -239,7 +247,7 @@ class Driver
     pids << spawn(env,
                   'flask', 'run', '--port', PORT, '--no-reload',
                   chdir: datadir,
-                  out: "appium_artifact_#{File.basename(ARGV[0])}_webdriver_stdout.log")
+                  out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_webdriver_stdout.log"))
     block.yield
   ensure
     terminate_pids(pids)
@@ -274,9 +282,9 @@ requirements_installed_marker = "#{Dir.tmpdir}/selenium-requirements-installed"
 if !File.exist?(requirements_installed_marker) && File.exist?("#{datadir}/requirements.txt")
   raise 'pip3 not found in PATH!' unless system('which', 'pip3')
   unless system('pip3', 'install', '--disable-pip-version-check', '-r', 'requirements.txt', chdir: datadir,
-                out: "appium_artifact_#{File.basename(ARGV[0])}_pip_stdout.log", err: "appium_artifact_#{File.basename(ARGV[0])}_pip_stderr.log")
+                out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_pip_stdout.log"), err: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_pip_stderr.log"))
     unless system('pip3', 'install', '--disable-pip-version-check', '--break-system-packages', '-r', 'requirements.txt',
-                  chdir: datadir, out: "appium_artifact_#{File.basename(ARGV[0])}_pip-break_stdout.log")
+                  chdir: datadir, out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_pip-break_stdout.log"))
       raise 'Failed to run pip3 install!'
     end
   end
@@ -354,7 +362,7 @@ CleanHome.with do
   end
 end
 
-system('ps aux', out: "appium_artifact_#{File.basename(ARGV[0])}_ps_end.log")
+system('ps aux', out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_ps_end.log"))
 
 logger.info "run.rb exiting #{ret}"
 ret ? exit : abort
