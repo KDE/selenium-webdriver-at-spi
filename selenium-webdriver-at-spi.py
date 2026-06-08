@@ -192,7 +192,6 @@ class Session:
             self.browsing_context = pyatspi.Registry.getDesktop(0)
             return
 
-        self.launched = True
         end_time = datetime.now() + \
             timedelta(milliseconds=(self.timeouts['implicit'] * 2))
 
@@ -231,12 +230,14 @@ class Session:
         if desired_app.endswith(".desktop"):
             appinfo = Gio.DesktopAppInfo.new(desired_app)
             appinfo.launch([], context)
+            self.launched = True
         elif desired_app.isnumeric():
             on_launched(None, None, {'pid': int(desired_app)})
         else:
             appinfo = Gio.AppInfo.create_from_commandline(
                 desired_app, None, Gio.AppInfoCreateFlags.NONE)
             appinfo.launch([], context)
+            self.launched = True
 
     def close(self) -> None:
         if self.launched:
