@@ -454,6 +454,10 @@ def session_element_click(session_id, element_id):
         action.doAction(availableActions['SetFocus'])
         time.sleep(EVENTLOOP_TIME)
 
+    if 'Set Focus' in keys: # alternative name for above
+        action.doAction(availableActions['Set Focus'])
+        time.sleep(EVENTLOOP_TIME)
+
     try:
         if 'Press' in keys:
             action.doAction(availableActions['Press'])
@@ -618,7 +622,7 @@ def session_element_value(session_id, element_id):
         action = element.queryAction()
         processed = False
         for i in range(0, action.nActions):
-            if action.getName(i) == 'SetFocus':
+            if action.getName(i) == 'SetFocus' or action.getName(i) == 'Set Focus':
                 processed = True
                 action.doAction(i)
                 time.sleep(EVENTLOOP_TIME) # give the focus time to apply
@@ -676,7 +680,7 @@ def session_element_clear(session_id, element_id):
         action = element.queryAction()
         processed = False
         for i in range(0, action.nActions):
-            if action.getName(i) == 'SetFocus':
+            if action.getName(i) == 'SetFocus' or action.getName(i) == 'Set Focus':
                 processed = True
                 action.doAction(i)
                 time.sleep(EVENTLOOP_TIME) # give the focus time to apply
