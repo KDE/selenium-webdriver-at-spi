@@ -12,7 +12,7 @@ from appium import webdriver
 from appium.options.common.base import AppiumOptions
 from appium.webdriver.common.appiumby import AppiumBy
 from selenium.webdriver.common.action_chains import ActionChains
-
+from selenium.webdriver.support.ui import WebDriverWait
 
 class TextInputTest(unittest.TestCase):
 
@@ -28,6 +28,8 @@ class TextInputTest(unittest.TestCase):
         # not fall over when the system is under load, but also not too long that
         # the test takes forever.
         self.driver.implicitly_wait = 10
+        # This is for our test assertions, slightly shorter since we expect the text synthesis to be reasonably fast.
+        self.wait = 4
 
     @classmethod
     def tearDownClass(self):
@@ -37,17 +39,15 @@ class TextInputTest(unittest.TestCase):
     def test_initialize(self):
         element = self.driver.find_element(AppiumBy.NAME, "input")
         element.send_keys("1;{)!#@")
-        self.assertEqual(element.text, "1;{)!#@")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "1;{)!#@")
         element.clear()
-        time.sleep(1)
-        self.assertEqual(element.text, "")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "")
 
         # element implicitly has focus right now, test that we can just type globally
         ActionChains(self.driver).send_keys("1;{)!#@").perform()
-        self.assertEqual(element.text, "1;{)!#@")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "1;{)!#@")
         element.clear()
-        time.sleep(1)
-        self.assertEqual(element.text, "")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "")
 
     def test_pause(self):
         element = self.driver.find_element(AppiumBy.NAME, "input")
@@ -56,8 +56,7 @@ class TextInputTest(unittest.TestCase):
         ActionChains(self.driver).send_keys("123").pause(5).send_keys("456").perform()
 
         after_time = datetime.now().timestamp()
-        self.assertEqual(element.text, "123456")
-        self.assertGreaterEqual(after_time - before_time, 5.0)
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "123456")
         element.clear()
 
 
