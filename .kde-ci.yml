@@ -2,14 +2,14 @@
 # SPDX-License-Identifier: CC0-1.0
 
 Dependencies:
-- 'on': ['Linux/Qt6', 'Linux/Qt6Next']
+- 'on': ['Linux/Qt6Lts']
   'require':
-    'frameworks/extra-cmake-modules': '@latest-kf6'
-    'frameworks/kwindowsystem': '@latest-kf6'
+    'frameworks/extra-cmake-modules': 'Frameworks/6.24'
+    'frameworks/kwindowsystem': 'Frameworks/6.24'
     'plasma/kwayland': '@same'
     'plasma/kwin': '@same'
     'plasma/kpipewire': '@same'
-    'third-party/wayland': '@latest-kf6'
+    'third-party/wayland': 'Frameworks/6.24'
 
 - 'on': ['Linux/Qt5']
   'require':
@@ -21,4 +21,4 @@ Dependencies:
     'third-party/wayland': '@latest'
 
 Options:
-  require-passing-tests-on: [ 'Linux/Qt6', 'Linux/Qt6Next' ]
+  require-passing-tests-on: [ 'Linux/Qt6Lts' ]
