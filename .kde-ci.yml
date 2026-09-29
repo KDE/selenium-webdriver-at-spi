@@ -9,6 +9,7 @@ Dependencies:
     'plasma/kwayland': '@same'
     'plasma/kwin': '@same'
     'plasma/kpipewire': '@same'
+    'plasma/plasma-integration': '@same'
     'third-party/wayland': 'Frameworks/6.24'
 
 - 'on': ['Linux/Qt5']
