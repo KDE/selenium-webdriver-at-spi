@@ -9,7 +9,14 @@ require 'logger'
 require 'shellwords'
 require 'tmpdir'
 
+SYSTEMD_ASSISTED_CI = ENV['KDECI_BUILD'] == 'TRUE' && !ENV['KDECI_PLATFORM_PATH'].include?('alpine')
+# APPIUM_ARTIFACT_OUTPUT_PATH environment variable allows setting an arbitrary
+# directory for artifact files, rather than the working directory
+ARTIFACT_OUTPUT_DIR = File.expand_path(ENV.fetch('APPIUM_ARTIFACT_OUTPUT_PATH', '.')).freeze
+
 def at_bus_exists?
+  return true if SYSTEMD_ASSISTED_CI # when managed by systemd it may be lazily started
+
   IO.popen(['dbus-send', '--print-reply=literal', '--dest=org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus.ListNames'], 'r') do |io|
     io.read.include?('org.a11y.Bus')
   end
@@ -37,6 +44,11 @@ def terminate_pids(pids)
     Process.kill('TERM', pid)
     Process.waitpid(pid)
   end
+end
+
+def artifact_path(filename)
+  FileUtils.mkdir_p(ARTIFACT_OUTPUT_DIR)
+  File.join(ARTIFACT_OUTPUT_DIR, filename)
 end
 
 class ATSPIBus
@@ -114,7 +126,7 @@ def kwin_reexec!
     # the __FILE__ ARGV bit, separate ARGVs to kwin_wayland would be distinct subprocesses to start but we want
     # one processes with a bunch of arguments.
     exec('kwin_wayland', '--no-lockscreen', *extra_args,
-         '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}")
+         '--exit-with-session', "#{__FILE__} #{ARGV.shelljoin}", out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_kwin_stdout.log"))
   end
   _pid, status = Process.waitpid2(kwin_pid)
   status.success? ? exit : abort
@@ -122,6 +134,13 @@ end
 
 def dbus_reexec!(logger:)
   return if ENV.include?('CUSTOM_BUS') # already inside a nested bus
+
+  if SYSTEMD_ASSISTED_CI
+    if ENV.fetch('USE_CUSTOM_BUS', '0').to_i != 0
+      logger.info('running in systemd assisted CI, relying on systemd user services. Ignoring USE_CUSTOM_BUS')
+    end
+    return
+  end
 
   if ENV.fetch('USE_CUSTOM_BUS', '0').to_i.zero? && # not explicitly enabled
      at_bus_exists? # already have an a11y bus, use it
@@ -139,17 +158,21 @@ def dbus_reexec!(logger:)
   _pid, status = Process.waitpid2(pid)
   terminate_pgids([pgid])
   logger.info('dbus session ended')
-  system('ps fja')
+  system('ps fja', out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_ps_stdout.log"))
   status.success? ? exit : abort
 end
 
 # Video recording wrapper
 class Recorder
   def self.with(&block)
+    # Yield if we don't want to record video
+    return block.yield if ENV['TEST_WITH_VIDEO_RECORDER'] == '0'
+
+    pids = []
     if ENV['KWIN_PID'] # Only auto-record if using kwin_wayland
-      if ARGV.size == 1
-        # There is only a single argument, it should be the file name of the test to run. Let's just record as that.
-        ENV['RECORD_VIDEO_NAME'] = "appium_artifact_#{File.basename(ARGV[0])}.webm"
+      if ARGV.size >= 1
+        # There is at least one argument, it should be the file name of the test to run. Let's just record as that.
+        ENV['RECORD_VIDEO_NAME'] = artifact_path("appium_artifact_#{File.basename(ARGV[0])}.webm")
       elsif ARGV.include?('--selenium-record-video')
         # Extract our own argument and the argument that follows it, then delete them so they don't mess with the
         # actual test.
@@ -164,28 +187,54 @@ class Recorder
 
     abort 'RECORD_VIDEO requires that a nested kwin wayland be used! (TEST_WITH_KWIN_WAYLAND)' unless ENV['KWIN_PID']
 
-    # Make sure kwin is up. This can be removed once the code was changed to re-exec as part of a kwin
-    # subprocess, then the wayland server is ready by the time we get re-executed.
-    sleep(5)
-    FileUtils.rm_f(ENV['RECORD_VIDEO_NAME'])
-    pids = []
+    recording = ENV.fetch('RECORD_VIDEO_NAME')
+    start_marker = "#{recording}.started"
+
+    FileUtils.rm_f(recording)
+    FileUtils.rm_f(start_marker)
+
     if ENV.include?('CUSTOM_BUS')
       # Only start auxillary services if we are running a custom bus. Otherwise we'd mess up session services.
       pids << spawn('pipewire')
       pids << spawn('wireplumber')
     end
-    pids << spawn('selenium-webdriver-at-spi-recorder', '--output', ENV.fetch('RECORD_VIDEO_NAME'))
-    5.times do
-      break if File.exist?(ENV['RECORD_VIDEO_NAME'])
+
+    20.times do # make sure pipewire is up and kwin is connected already, otherwise recording will definitely fail
+      break if system('pw-dump | grep -q kwin_wayland')
 
       sleep(1)
     end
+
+    pids << spawn('selenium-webdriver-at-spi-recorder', '--output', recording)
+
+    20.times do
+      break if File.exist?(start_marker)
+
+      sleep(1)
+    end
+
+    unless File.exist?(start_marker)
+      warn "Video recording didn't start properly, file was not created #{start_marker}"
+      abort "Failed to start video recording. Please talk to sitter!"
+    end
+
     block.yield
+
   ensure
+    # mind that we may skip out of the block above before defining certain variables. Be mindful of what may be undefined.
     terminate_pids(pids)
-    if ENV['RECORD_VIDEO_NAME'] &&
-       (!File.exist?(ENV['RECORD_VIDEO_NAME']) || File.size(ENV['RECORD_VIDEO_NAME']) < 256_000)
-      warn "recording apparently didn't work properly"
+
+    if recording # may be undefined if no recording is requested
+      unless File.exist?(recording)
+        warn "Video recording didn't finish properly, file was not created #{recording}"
+        abort "Failed to stop video recording. Please talk to sitter!"
+      end
+
+      recording_exists = File.exist?(recording)
+      recording_looks_valid = (File.size(recording) >= 1024)
+      if !recording_exists || !recording_looks_valid
+        warn "recording apparently didn't work properly #{recording} exists: #{recording_exists}, size: #{File.size(recording)} #{recording_looks_valid}. Talk to sitter!"
+      end
     end
   end
 end
@@ -197,15 +246,34 @@ class Driver
     env['GDK_BACKEND'] = 'wayland' if ENV['KWIN_PID']
     pids << spawn(env,
                   'flask', 'run', '--port', PORT, '--no-reload',
-                  chdir: datadir)
+                  chdir: datadir,
+                  out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_webdriver_stdout.log"))
     block.yield
   ensure
     terminate_pids(pids)
   end
 end
 
+# Manages the XDG home directory for the test run. If TEST_WITH_CLEAN_HOME is set to 0,
+# the existing home is used as-is. Otherwise a throw-away XDG home is created so the test
+# starts with a clean slate with every run, and doesn't mess with your local installation.
+class CleanHome
+  def self.with(&block)
+    return block.yield if ENV['TEST_WITH_CLEAN_HOME'] == '0'
+
+    Dir.mktmpdir('selenium') do |xdg_home|
+      %w[CACHE CONFIG DATA STATE].each do |d|
+        Dir.mkdir("#{xdg_home}/#{d}")
+        ENV["XDG_#{d}_HOME"] = "#{xdg_home}/#{d}"
+      end
+      block.yield
+    end
+  end
+end
+
 PORT = ENV.fetch('FLASK_PORT', '4723')
 $stdout.sync = true # force immediate flushing without internal caching
+ENV['PYTHONUNBUFFERED'] = '0' # same for python subprocesses
 logger = Logger.new($stdout)
 
 logger.info 'Installing dependencies'
@@ -213,8 +281,10 @@ datadir = File.absolute_path("#{__dir__}/../share/selenium-webdriver-at-spi/")
 requirements_installed_marker = "#{Dir.tmpdir}/selenium-requirements-installed"
 if !File.exist?(requirements_installed_marker) && File.exist?("#{datadir}/requirements.txt")
   raise 'pip3 not found in PATH!' unless system('which', 'pip3')
-  unless system('pip3', 'install', '-r', 'requirements.txt', chdir: datadir)
-    unless system('pip3', 'install', '--break-system-packages', '-r', 'requirements.txt', chdir: datadir)
+  unless system('pip3', 'install', '--disable-pip-version-check', '-r', 'requirements.txt', chdir: datadir,
+                out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_pip_stdout.log"), err: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_pip_stderr.log"))
+    unless system('pip3', 'install', '--disable-pip-version-check', '--break-system-packages', '-r', 'requirements.txt',
+                  chdir: datadir, out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_pip-break_stdout.log"))
       raise 'Failed to run pip3 install!'
     end
   end
@@ -226,18 +296,26 @@ if !File.exist?(requirements_installed_marker) && File.exist?("#{datadir}/requir
   end
 end
 
+if SYSTEMD_ASSISTED_CI
+  # Prefer using systemd managed services. It's faster and more reliable than doing this manually.
+  # ci-utilities mangles the environment - unmangle it so systemctl actually manages to talk to the daemon instance.
+  ENV['DBUS_SESSION_BUS_ADDRESS'] = "unix:path=/run/user/#{`id -u`.strip}/bus"
+  ENV['XDG_RUNTIME_DIR'] = "/run/user/#{`id -u`.strip}"
+  logger.info 'Starting user services via systemd'
+  for service in ['at-spi-dbus-bus.service', 'pipewire.socket', 'wireplumber.service']
+    system('systemctl', '--user', 'start', service) || raise("Failed to start #{service} via systemd!")
+  end
+end
+
+# Just in case the environment is a bit incomplete and doesn't have the dir created. Not having the dir breaks assumptions
+# in some software.
+FileUtils.mkdir_p(ENV['XDG_RUNTIME_DIR'])
+
 ENV['PATH'] = "#{Dir.home}/.local/bin:#{ENV.fetch('PATH')}"
 
 ret = false
 
-# create a throw-away XDG home, so the test starts with a clean slate
-# with every run, and doesn't mess with your local installation
-Dir.mktmpdir('selenium') do |xdg_home|
-  %w[CACHE CONFIG DATA STATE].each do |d|
-    Dir.mkdir("#{xdg_home}/#{d}")
-    ENV["XDG_#{d}_HOME"] = "#{xdg_home}/#{d}"
-  end
-
+CleanHome.with do
   dbus_reexec!(logger: logger)
   kwin_reexec!
   if ENV['KDECI_BUILD'] == 'TRUE'
@@ -267,15 +345,24 @@ Dir.mktmpdir('selenium') do |xdg_home|
 
         logger.info "starting test #{ARGV}"
         ret = begin
-          system(*ARGV, exception: true)
-        rescue RuntimeError # We intentionally let ENOENT raise out of this block
-          false
-        end
-        logger.info 'tests done'
+        system(*ARGV, exception: true, pgroup: true)
+      rescue RuntimeError # We intentionally let ENOENT raise out of this block
+        false
+      end
+      begin
+        # terminate the whole process group to try and make sure we also kill subprocesses of the test it hadn't cleaned up
+        test_proc = $?
+        Process.kill('TERM', -test_proc.pid)
+      rescue Errno::ESRCH
+        # group already dead, nothing to do
+      end
+      logger.info 'tests done'
       end
     end
   end
 end
+
+system('ps aux', out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_ps_end.log"))
 
 logger.info "run.rb exiting #{ret}"
 ret ? exit : abort
