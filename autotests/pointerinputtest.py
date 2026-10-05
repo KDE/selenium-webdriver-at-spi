@@ -15,7 +15,7 @@ from selenium.webdriver.common.actions.interaction import (POINTER_MOUSE, POINTE
 from selenium.webdriver.common.actions.mouse_button import MouseButton
 from selenium.webdriver.common.actions.pointer_input import PointerInput
 from selenium.webdriver.common.actions.wheel_actions import WheelActions
-
+from selenium.webdriver.support.ui import WebDriverWait
 
 class PointerInputTest(unittest.TestCase):
 
@@ -42,22 +42,22 @@ class PointerInputTest(unittest.TestCase):
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_TOUCH, "finger"))
         action.pointer_action.move_to_location(100, 100).click()
         action.perform()
-        self.assertEqual(element.text, "touchscreen")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "touchscreen")
 
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_TOUCH, "finger"))
         action.pointer_action.move_to_location(200, 200).pointer_down().move_by(200, 200).pointer_up()
         action.perform()
-        self.assertEqual(element.text, "dragged")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "dragged")
 
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_TOUCH, "finger"))
         action.pointer_action.move_to_location(100, 100).pointer_down().pause(3).pointer_up()
         action.perform()
-        self.assertEqual(element.text, "touchscreen longpressed")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "touchscreen longpressed")
 
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_TOUCH, "finger"))
         action.pointer_action.move_to_location(200, 200).pointer_down().move_to_location(400, 400).pointer_up()
         action.perform()
-        self.assertEqual(element.text, "dragged")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "dragged")
 
     def test_2_mouse(self) -> None:
         element = self.driver.find_element(AppiumBy.NAME, "result")
@@ -65,27 +65,27 @@ class PointerInputTest(unittest.TestCase):
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_MOUSE, "mouse"))
         action.pointer_action.move_to_location(100, 100).click()
         action.perform()
-        self.assertEqual(element.text, "mouse left")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "mouse left")
 
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_MOUSE, "mouse"))
         action.pointer_action.move_to_location(200, 200).pointer_down().move_by(200, 200).pointer_up()
         action.perform()
-        self.assertEqual(element.text, "dragged")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "dragged")
 
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_MOUSE, "mouse"))
         action.pointer_action.move_to_location(100, 100).click(None, MouseButton.MIDDLE)
         action.perform()
-        self.assertEqual(element.text, "mouse middle")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "mouse middle")
 
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_MOUSE, "mouse"))
         action.pointer_action.move_to_location(200, 200).pointer_down().move_to_location(400, 400).pointer_up()
         action.perform()
-        self.assertEqual(element.text, "dragged")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "dragged")
 
         action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_MOUSE, "mouse"))
         action.pointer_action.move_to_location(100, 100).click(None, MouseButton.RIGHT)
         action.perform()
-        self.assertEqual(element.text, "mouse right")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "mouse right")
 
     @unittest.skipIf("KDECI_BUILD" in os.environ, "Broken in CI")
     def test_3_wheel(self) -> None:
@@ -94,12 +94,12 @@ class PointerInputTest(unittest.TestCase):
         action = ActionBuilder(self.driver)
         action.wheel_action.scroll(100, 100, 0, -15)
         action.perform()
-        self.assertEqual(element.text, "wheel 0 180")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "wheel 0 180")
 
         action = ActionBuilder(self.driver)
         action.wheel_action.scroll(100, 100, -15, 0)
         action.perform()
-        self.assertEqual(element.text, "wheel 180 0")
+        WebDriverWait(self.driver, 4).until(lambda x: element.text == "wheel 180 0")
 
 
 if __name__ == '__main__':
