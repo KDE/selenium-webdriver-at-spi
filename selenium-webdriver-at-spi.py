@@ -51,6 +51,17 @@ logger = logging.Logger("selenium-webdriver-at-spi", logging.INFO)
 # of timing out on (e.g.) click events. The second value is the timeout for app startup, we keep that the same as upstream.
 pyatspi.setTimeout(4000, 15000)
 
+# Register a superfluous event listener so at-spi2 enables accessibility status.
+# This makes sure apps actually show up on the bus.
+# See https://gitlab.gnome.org/GNOME/at-spi2-core/-/commit/c674dc9740ca3858cd90f4206d2ee4309fba7388 which reworked the heuristic
+def _a11y_event_listener(event):
+    pass
+
+pyatspi.Registry.registerEventListener(
+    _a11y_event_listener,
+    "window:activate"
+)
+
 # Using flask because I know nothing about writing REST in python and it seemed the most straight-forward framework.
 app = Flask(__name__)
 
