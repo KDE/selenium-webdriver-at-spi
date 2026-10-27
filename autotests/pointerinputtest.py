@@ -47,6 +47,14 @@ class PointerInputTest(unittest.TestCase):
         exposed, re-running the action delivers it normally. This does not mask
         real regressions: a genuinely broken handler would never produce the
         expected text, so the retries would still fail.
+
+        A retry can also be needed for touch drags. QQuickDragHandler only
+        activates on a touch move event whose point state is not Released, so
+        if the over-threshold move never reaches the handler the drag produces
+        no "dragged" text at all (observed intermittently under CI load). A
+        retried drag gives another chance. This is also why the touch drag
+        helpers use a longer move duration: it yields more interpolated motion
+        events, increasing the odds that one of them is seen.
         """
         for _ in range(attempts):
             action_builder().perform()
@@ -62,13 +70,18 @@ class PointerInputTest(unittest.TestCase):
         action.pointer_action.move_to_location(x, y).click()
         return action
 
+    # A longer move duration produces more interpolated touch motion events, so
+    # QQuickDragHandler gets more chances to observe an over-threshold move
+    # before the touch up (see _perform_and_wait).
+    _DRAG_DURATION = 500
+
     def _touch_drag(self, x: int, y: int, dx: int, dy: int) -> ActionBuilder:
-        action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_TOUCH, "finger"))
+        action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_TOUCH, "finger"), duration=self._DRAG_DURATION)
         action.pointer_action.move_to_location(x, y).pointer_down().move_by(dx, dy).pointer_up()
         return action
 
     def _touch_drag_to(self, x1: int, y1: int, x2: int, y2: int) -> ActionBuilder:
-        action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_TOUCH, "finger"))
+        action = ActionBuilder(self.driver, mouse=PointerInput(POINTER_TOUCH, "finger"), duration=self._DRAG_DURATION)
         action.pointer_action.move_to_location(x1, y1).pointer_down().move_to_location(x2, y2).pointer_up()
         return action
 
@@ -101,9 +114,11 @@ class PointerInputTest(unittest.TestCase):
         element = self.driver.find_element(AppiumBy.NAME, "result")
 
         self._perform_and_wait(element, "touchscreen", lambda: self._touch_tap(100, 100))
-        self._perform_and_wait(element, "dragged", lambda: self._touch_drag(200, 200, 200, 200))
+        # Touch drags need more attempts: QQuickDragHandler only activates on a non-Released
+        # touch move, and under CI load the move can be dropped, so the drag may not register.
+        self._perform_and_wait(element, "dragged", lambda: self._touch_drag(200, 200, 200, 200), attempts=5)
         self._perform_and_wait(element, "touchscreen longpressed", lambda: self._touch_long_press(100, 100))
-        self._perform_and_wait(element, "dragged", lambda: self._touch_drag_to(200, 200, 400, 400))
+        self._perform_and_wait(element, "dragged", lambda: self._touch_drag_to(200, 200, 400, 400), attempts=5)
 
     def test_2_mouse(self) -> None:
         element = self.driver.find_element(AppiumBy.NAME, "result")
