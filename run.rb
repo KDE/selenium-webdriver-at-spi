@@ -151,12 +151,28 @@ def dbus_reexec!(logger:)
 
   logger.info('starting dbus session')
   ENV['CUSTOM_BUS'] = '1'
-  # Using spawn() rather than exec() so we can print useful debug information after the run
-  # (useful to debug problems with shutdown of started processes)
-  pid = spawn('dbus-run-session', '--', __FILE__, *ARGV, pgroup: true)
-  pgid = Process.getpgid(pid)
-  _pid, status = Process.waitpid2(pid)
-  terminate_pgids([pgid])
+
+  # Use a dedicated pipewire runtime dir so the socket/lock files don't collide
+  # with the user's real session when running on the same XDG_RUNTIME_DIR.
+  # Without this, the test's pipewire fails to start because it can't lock the
+  # same lock file as the desktop session's pipewire.
+  pw_runtime_dir = nil
+  if ENV['PIPEWIRE_RUNTIME_DIR'].nil?
+    pw_runtime_dir = Dir.mktmpdir('pw-runtime-')
+    ENV['PIPEWIRE_RUNTIME_DIR'] = pw_runtime_dir
+  end
+
+  begin
+    # Using spawn() rather than exec() so we can print useful debug information after the run
+    # (useful to debug problems with shutdown of started processes)
+    pid = spawn('dbus-run-session', '--', __FILE__, *ARGV, pgroup: true)
+    pgid = Process.getpgid(pid)
+    _pid, status = Process.waitpid2(pid)
+    terminate_pgids([pgid])
+  ensure
+    FileUtils.rm_rf(pw_runtime_dir) if pw_runtime_dir
+  end
+
   logger.info('dbus session ended')
   system('ps fja', out: artifact_path("appium_artifact_#{File.basename(ARGV[0])}_ps_stdout.log"))
   status.success? ? exit : abort
