@@ -48,6 +48,8 @@ Item {
     }
 
     WheelHandler {
+        // Depending on QtWayland's mood we may get the event from a touchpad, so make sure to accept either device.
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
         orientation: Qt.Vertical | Qt.Horizontal
         onWheel: wheel => result.text = `wheel ${wheel.angleDelta.x} ${wheel.angleDelta.y}`
     }

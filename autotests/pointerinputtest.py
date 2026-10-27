@@ -92,6 +92,11 @@ class PointerInputTest(unittest.TestCase):
         action.pointer_action.move_to_location(x1, y1).pointer_down().move_to_location(x2, y2).pointer_up()
         return action
 
+    def _wheel_scroll(self, x: int, y: int, dx: int, dy: int) -> ActionBuilder:
+        action = ActionBuilder(self.driver)
+        action.wheel_action.scroll(x, y, dx, dy)
+        return action
+
     def test_1_touch(self) -> None:
         element = self.driver.find_element(AppiumBy.NAME, "result")
 
@@ -109,19 +114,11 @@ class PointerInputTest(unittest.TestCase):
         self._perform_and_wait(element, "dragged", lambda: self._mouse_drag_to(200, 200, 400, 400))
         self._perform_and_wait(element, "mouse right", lambda: self._mouse_tap(100, 100, MouseButton.RIGHT))
 
-    @unittest.skipIf("KDECI_BUILD" in os.environ, "Broken in CI")
     def test_3_wheel(self) -> None:
         element = self.driver.find_element(AppiumBy.NAME, "result")
 
-        action = ActionBuilder(self.driver)
-        action.wheel_action.scroll(100, 100, 0, -15)
-        action.perform()
-        WebDriverWait(self.driver, 4).until(lambda x: element.text == "wheel 0 180")
-
-        action = ActionBuilder(self.driver)
-        action.wheel_action.scroll(100, 100, -15, 0)
-        action.perform()
-        WebDriverWait(self.driver, 4).until(lambda x: element.text == "wheel 180 0")
+        self._perform_and_wait(element, "wheel 0 180", lambda: self._wheel_scroll(100, 100, 0, -15))
+        self._perform_and_wait(element, "wheel 180 0", lambda: self._wheel_scroll(100, 100, -15, 0))
 
 
 if __name__ == '__main__':
